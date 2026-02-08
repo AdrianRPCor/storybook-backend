@@ -1,3 +1,5 @@
+console.log("OPENAI_API_KEY EXISTS:", !!process.env.OPENAI_API_KEY);
+
 import OpenAI from "openai";
 
 const client = new OpenAI({
