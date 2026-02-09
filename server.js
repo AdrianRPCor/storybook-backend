@@ -6,12 +6,23 @@ import generateText from "./routes/generateText.js";
 import generateImage from "./routes/generateImage.js";
 import exportPdf from "./routes/exportPdf.js";
 
+/* =========================
+   ENV
+========================= */
 dotenv.config();
 
+if (!process.env.OPENAI_API_KEY) {
+  console.error("❌ OPENAI_API_KEY no definida en entorno");
+  process.exit(1); // mata el container si no existe
+}
+
+/* =========================
+   APP
+========================= */
 const app = express();
 
 /* =========================
-   LOG GLOBAL (DEBUG REAL)
+   LOG GLOBAL
 ========================= */
 app.use((req, res, next) => {
   console.log("➡️", req.method, req.originalUrl);
@@ -19,32 +30,30 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   CORS — FORMA CORRECTA
-   (una sola vez, global)
+   CORS (PRODUCCIÓN)
 ========================= */
 app.use(
   cors({
-    origin: true, // refleja el origin automáticamente
-    credentials: false,
+    origin: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 /* =========================
-   BODY PARSER
+   BODY
 ========================= */
 app.use(express.json({ limit: "10mb" }));
 
 /* =========================
-   HEALTH CHECK
+   HEALTH
 ========================= */
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.send("Storybook backend activo ✅");
 });
 
 /* =========================
-   API v1
+   ROUTES
 ========================= */
 app.use("/api/v1/generation/chapter-content", generateText);
 app.use("/api/v1/generation/scene", generateImage);
