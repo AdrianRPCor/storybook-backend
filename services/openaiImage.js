@@ -11,13 +11,18 @@ function getClient() {
   });
 }
 
-export async function generateText(prompt) {
+export async function generateImage(prompt, coloring = false) {
   const openai = getClient();
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [{ role: "user", content: prompt }]
+  const finalPrompt = coloring
+    ? `${prompt}. Black and white line art, no shading, for children's coloring book`
+    : prompt;
+
+  const result = await openai.images.generate({
+    model: "gpt-image-1",
+    prompt: finalPrompt,
+    size: "1024x1024"
   });
 
-  return response.choices[0].message.content;
+  return result.data[0].url;
 }
