@@ -11,48 +11,45 @@ dotenv.config();
 
 const app = express();
 
-/* ======================================================
-   CORS — CONFIGURACIÓN CORRECTA (CLAVE)
-====================================================== */
-app.use(cors({
-  origin: [
-    "https://proyectoarena.com",
-    "https://www.proyectoarena.com",
-    "http://localhost:3000",
-    "http://localhost:5173"
-  ],
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false
-}));
+/* =========================
+   CORS — CONFIGURACIÓN REAL
+========================= */
+app.use(
+  cors({
+    origin: [
+      "https://proyectoarena.com",
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
 
-// PRE-FLIGHT (MUY IMPORTANTE)
+// IMPORTANTE para preflight
 app.options("*", cors());
 
-/* ======================================================
-   MIDDLEWARES
-====================================================== */
 app.use(express.json({ limit: "10mb" }));
 
-/* ======================================================
+/* =========================
    HEALTH CHECK
-====================================================== */
+========================= */
 app.get("/", (req, res) => {
-  res.json({ ok: true, message: "Storybook backend activo ✅" });
+  res.send("Storybook backend activo ✅");
 });
 
-/* ======================================================
-   RUTAS — COINCIDEN CON EL FRONT
-====================================================== */
+/* =========================
+   API v1 — EXACTAMENTE
+   lo que usa el FRONT
+========================= */
 app.use("/api/v1/generation/chapter-content", generateText);
 app.use("/api/v1/generation/scene", generateImage);
-app.use("/api/v1/pdf", exportPdf);
+app.use("/api/v1/export/pdf", exportPdf);
 
-/* ======================================================
+/* =========================
    START
-====================================================== */
+========================= */
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-  console.log(`🚀 Backend corriendo en puerto ${PORT}`);
+  console.log("🚀 Backend corriendo en puerto:", PORT);
 });
