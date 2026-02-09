@@ -11,6 +11,8 @@ import exportPdf from "./routes/exportPdf.js";
 ========================= */
 dotenv.config();
 
+console.log("🔑 OPENAI_API_KEY =", process.env.OPENAI_API_KEY);
+
 console.log("🔑 OPENAI_API_KEY presente:", !!process.env.OPENAI_API_KEY);
 
 /* =========================
