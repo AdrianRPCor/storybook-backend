@@ -1,15 +1,16 @@
 import express from "express";
-import { generateText } from "../services/openaiText.js";
+import { generateTextService } from "../services/generateTextService.js";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
     const { prompt } = req.body;
-    const text = await generateText(prompt);
+    const text = await generateTextService(prompt);
     res.json({ text });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Error generando texto" });
   }
 });
 
