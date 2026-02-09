@@ -11,11 +11,6 @@ import exportPdf from "./routes/exportPdf.js";
 ========================= */
 dotenv.config();
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ OPENAI_API_KEY no definida en entorno");
-  process.exit(1); // mata el container si no existe
-}
-
 /* =========================
    APP
 ========================= */
@@ -30,7 +25,7 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   CORS (PRODUCCIÓN)
+   CORS (PRODUCCIÓN OK)
 ========================= */
 app.use(
   cors({
