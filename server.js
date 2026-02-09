@@ -12,10 +12,41 @@ dotenv.config();
 const app = express();
 
 /* =========================
-   CORS — CONFIGURACIÓN REAL
+   LOG GLOBAL (DEBUG)
+   — para ver SI LLEGAN
+   las peticiones
 ========================= */
-app.use(cors({ origin: true }));
+app.use((req, res, next) => {
+  console.log("➡️ Request:", req.method, req.url);
+  next();
+});
 
+/* =========================
+   CORS — FORZADO (DEBUG)
+   — acepta TODO
+========================= */
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+/* =========================
+   RESPUESTA EXPLÍCITA
+   A PREFLIGHT (OPTIONS)
+========================= */
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return res.sendStatus(200);
+});
+
+/* =========================
+   BODY PARSER
+========================= */
 app.use(express.json({ limit: "10mb" }));
 
 /* =========================
