@@ -1,23 +1,18 @@
-import express from "express";
-import { generateText } from "../services/openaiText.js";
+import OpenAI from "openai";
 
-const router = express.Router();
-
-router.post("/", async (req, res) => {
-  try {
-    const { prompt } = req.body;
-
-    if (!prompt) {
-      return res.status(400).json({ error: "Falta el prompt" });
-    }
-
-    const text = await generateText(prompt);
-
-    res.json({ text });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error generando texto" });
+export async function generateText(prompt) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY no está disponible en runtime");
   }
-});
 
-export default router;
+  const client = new OpenAI({ apiKey });
+
+  const response = await client.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.7,
+  });
+
+  return response.choices[0].message.content.trim();
+}
