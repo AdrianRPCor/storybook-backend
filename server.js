@@ -11,6 +11,8 @@ import exportPdf from "./routes/exportPdf.js";
 ========================= */
 dotenv.config();
 
+console.log("🔑 OPENAI_API_KEY presente:", !!process.env.OPENAI_API_KEY);
+
 /* =========================
    APP
 ========================= */
@@ -25,7 +27,7 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   CORS (PRODUCCIÓN OK)
+   CORS (PRODUCCIÓN)
 ========================= */
 app.use(
   cors({
