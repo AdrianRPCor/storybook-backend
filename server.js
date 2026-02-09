@@ -13,24 +13,45 @@ dotenv.config();
 // Crear app
 const app = express();
 
+/* =====================================================
+   CORS — CONFIGURACIÓN CORRECTA PARA FRONTEND
+   (esto es lo que te estaba bloqueando todo)
+===================================================== */
+app.use(
+  cors({
+    origin: [
+      "https://proyectoarena.com",   // dominio real
+      "https://www.proyectoarena.com",
+      "http://localhost:3000",       // dev
+      "http://localhost:5173"        // dev (Vite)
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// Preflight (muy importante para Railway + fetch)
+app.options("*", cors());
+
 // Middlewares
-app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-// Ruta prueba
+// Ruta de prueba
 app.get("/", (req, res) => {
   res.send("Storybook backend activo ✅");
 });
 
-// Rutas principales
-app.use("/api/text", generateText);
-app.use("/api/image", generateImage);
-app.use("/api/pdf", exportPdf);
+// ================================
+// RUTAS API
+// ================================
+app.use("/api/v1/generation", generateText);
+app.use("/api/v1/generation", generateImage);
+app.use("/api/v1/pdf", exportPdf);
 
 // Puerto
 const PORT = process.env.PORT || 3000;
 
 // Arrancar servidor
 app.listen(PORT, () => {
-  console.log("🚀 Backend corriendo en puerto:", PORT);
+  console.log(`🚀 Backend Storybook corriendo en puerto ${PORT}`);
 });
