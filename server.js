@@ -14,20 +14,7 @@ const app = express();
 /* =========================
    CORS — CONFIGURACIÓN REAL
 ========================= */
-app.use(
-  cors({
-    origin: [
-      "https://proyectoarena.com",
-      "http://localhost:3000",
-      "http://localhost:5173"
-    ],
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  })
-);
-
-// IMPORTANTE para preflight
-app.options("*", cors());
+app.use(cors({ origin: true }));
 
 app.use(express.json({ limit: "10mb" }));
 
