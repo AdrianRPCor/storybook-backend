@@ -1,19 +1,23 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+function getClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("❌ OPENAI_API_KEY no disponible en runtime");
+    throw new Error("OPENAI_API_KEY missing");
+  }
 
-export async function generateImage(prompt, coloring = false) {
-  const finalPrompt = coloring
-    ? `${prompt}. Black and white line art, no shading, for children's coloring book`
-    : prompt;
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+}
 
-  const result = await openai.images.generate({
-    model: "gpt-image-1",
-    prompt: finalPrompt,
-    size: "1024x1024"
+export async function generateText(prompt) {
+  const openai = getClient();
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages: [{ role: "user", content: prompt }]
   });
 
-  return result.data[0].url;
+  return response.choices[0].message.content;
 }
