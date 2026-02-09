@@ -1,16 +1,20 @@
-console.log("OPENAI_API_KEY EXISTS:", !!process.env.OPENAI_API_KEY);
-
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 export async function generateText(prompt) {
-  const response = await client.responses.create({
-    model: "gpt-4.1-mini",
-    input: prompt
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY no está disponible en runtime");
+  }
+
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
   });
 
-  return response.output_text;
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages: [
+      { role: "user", content: prompt }
+    ]
+  });
+
+  return response.choices[0].message.content;
 }
