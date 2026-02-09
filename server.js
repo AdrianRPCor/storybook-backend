@@ -12,42 +12,35 @@ dotenv.config();
 const app = express();
 
 /* =========================
-   LOG GLOBAL (DEBUG)
-   — para ver SI LLEGAN
-   las peticiones
+   CORS — DEFINITIVO
+   (navegador + Railway)
 ========================= */
-app.use((req, res, next) => {
-  console.log("➡️ Request:", req.method, req.url);
-  next();
-});
+const corsOptions = {
+  origin: "*", // ⚠️ DEBUG: permitir todos los dominios
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 
 /* =========================
-   CORS — FORZADO (DEBUG)
-   — acepta TODO
+   PREFLIGHT (OPTIONS)
+   — CLAVE PARA CORS
 ========================= */
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-/* =========================
-   RESPUESTA EXPLÍCITA
-   A PREFLIGHT (OPTIONS)
-========================= */
-app.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res.sendStatus(200);
-});
+app.options("*", cors(corsOptions));
 
 /* =========================
    BODY PARSER
 ========================= */
 app.use(express.json({ limit: "10mb" }));
+
+/* =========================
+   LOG GLOBAL (DEBUG REAL)
+========================= */
+app.use((req, res, next) => {
+  console.log(`➡️ ${req.method} ${req.url}`);
+  next();
+});
 
 /* =========================
    HEALTH CHECK
@@ -57,17 +50,16 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   API v1 — EXACTAMENTE
-   lo que usa el FRONT
+   API v1 — FRONTEND
 ========================= */
 app.use("/api/v1/generation/chapter-content", generateText);
 app.use("/api/v1/generation/scene", generateImage);
 app.use("/api/v1/export/pdf", exportPdf);
 
 /* =========================
-   START
+   START (Railway)
 ========================= */
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log("🚀 Backend corriendo en puerto:", PORT);
 });
