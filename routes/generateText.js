@@ -1,38 +1,37 @@
 import express from "express";
-import buildTextPrompt from "../services/promptBuilder.js";
-import generateText from "../services/openaiText.js";
-import applyTextConstraints from "../services/textConstraints.js";
-import postProcessText from "../services/textPostprocess.js";
+import { generatePageText } from "../services/editorialOrchestrator.js";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
 
-    const { page, story, settings, brain, pages } = req.body;
+    const { page, story, settings, brain } = req.body;
 
     if (!page || !settings) {
       return res.status(400).json({ error: "Faltan datos necesarios" });
     }
 
-    // 1️⃣ Construir prompt estructurado
-    const prompt = buildTextPrompt({
+    const context = {
+      pageType: page.type,
+      pageNumber: page.pageNumber,
+      storyTitle: story?.title,
+      theme: story?.theme,
+      lesson: story?.lesson,
+      characters: settings?.characters || [],
+      ageTarget: settings.ageTarget,
+      bookTitle: settings.bookTitle,
+      previousPageText: page.previousPageText || "",
+      nextPageGoal: page.nextPageGoal || ""
+    };
+
+    const result = await generatePageText({
+      brain,
       page,
-      story,
-      settings,
-      brain
+      context
     });
 
-    // 2️⃣ Generar texto
-    let text = await generateText(prompt);
-
-    // 3️⃣ Aplicar límites (longitud, limpieza, etc.)
-    text = applyTextConstraints(text, page.type, settings.ageTarget);
-
-    // 4️⃣ Post-procesado final
-    text = postProcessText(text);
-
-    res.json({ text });
+    res.json({ text: result.text });
 
   } catch (err) {
     console.error("❌ Error generando texto:", err);
