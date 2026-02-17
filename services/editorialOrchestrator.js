@@ -10,6 +10,40 @@ export async function generatePageText({ page, story, settings, brain, pages }) 
   const pageType = page.type;
   const ageTarget = settings.ageTarget;
 
+  // =============================
+  // 🧠 COHERENCIA GLOBAL REAL
+  // =============================
+
+  let previousPageText = "";
+  let nextPageGoal = "";
+
+  // Ordenar páginas por orden real
+  const orderedPages = [...pages].sort((a, b) => a.order - b.order);
+
+  // Encontrar índice actual
+  const currentIndex = orderedPages.findIndex(p => p.id === page.id);
+
+  // Texto anterior REAL
+  if (currentIndex > 0) {
+    previousPageText = orderedPages[currentIndex - 1]?.text || "";
+  }
+
+    // Definir objetivo narrativo según posición
+    if (pageType === "story" && story) {
+
+      const storyPages = orderedPages.filter(p => p.storyId === story.id && p.type === "story");
+
+      const storyIndex = storyPages.findIndex(p => p.id === page.id);
+
+    if (storyIndex === 0) {
+      nextPageGoal = "Introducir situación emocional inicial.";
+    } else if (storyIndex === storyPages.length - 1) {
+      nextPageGoal = "Resolver conflicto emocional con cierre positivo.";
+    } else {
+      nextPageGoal = "Desarrollar conflicto y avance emocional.";
+    }
+  }
+
   // =========================
   // 1️⃣ CONTEXTO NARRATIVO REAL
   // =========================
