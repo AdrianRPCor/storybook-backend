@@ -5,7 +5,7 @@ import { buildPrompt } from "./promptBuilder.js";
 import { cleanText, enforceSingleBlock, countWords } from "./textPostprocess.js";
 import { generateText } from "./openaiText.js";
 
-export async function generatePageText({ page, story, settings, brain }) {
+export async function generatePageText({ page, story, settings, brain, pages }) {
 
   const pageType = page.type;
   const ageTarget = settings.ageTarget;
