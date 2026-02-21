@@ -1,71 +1,117 @@
-// services/promptBuilder.js
-
 export function buildPrompt({
   brain,
-  page,
   context,
   maxWords,
-  styleHints,
-  previousPageText = "",
-  nextPageGoal = ""
+  styleHints
 }) {
+
   const {
     pageType,
     pageNumber,
     storyTitle,
+    storyIndex,
     theme,
     lesson,
     characters = [],
-    bookTitle
+    bookTitle,
+    bookSubtitle,
+    storyTitles = [],
+    previousPageText,
+    nextPageGoal,
+    ageTarget
   } = context;
 
   const chars = characters.length
-    ? characters.map(c => `- ${c.name} (${c.type || "personaje"}): ${c.traits || ""} ${c.visualTraits ? `| rasgos visuales: ${c.visualTraits}` : ""}`.trim()).join("\n")
-    : "- (No definidos: crea los mínimos necesarios y mantenlos consistentes)";
+    ? characters.map(c =>
+        `- ${c.name || "Personaje"}: ${c.description || ""}`
+      ).join("\n")
+    : "- Usa solo los personajes necesarios y mantenlos coherentes.";
 
-  const pageInstruction = (() => {
-    switch (pageType) {
-      case "cover":
-        return `Escribe el TÍTULO y SUBTÍTULO del libro "${bookTitle || ""}".`;
-      case "story-cover":
-        return `Escribe el título del cuento: "${storyTitle || ""}".`;
-      case "index":
-        return `Escribe un índice simple del libro (títulos de cuentos y secciones).`;
-      case "parents":
-        return `Escribe una página para padres: emoción trabajada + por qué importa + 3 consejos prácticos.`;
-      case "story":
-      default:
-        return `Escribe el texto de la página ${pageNumber}. Continúa la historia de forma coherente.`;
-    }
-  })();
+  const instructionByType = {
 
-  // Importante: pedir “solo texto final”, y controlar longitud por maxWords
+    cover: `
+Escribe:
+1) TÍTULO (máximo 8 palabras)
+2) SUBTÍTULO (máximo 12 palabras)
+3) Texto breve de contraportada (máximo 80 palabras)
+
+Debe reflejar las temáticas del libro.
+`.trim(),
+
+    "story-cover": `
+Escribe SOLO el título del cuento "${storyTitle}".
+Máximo 8 palabras.
+Debe reflejar la enseñanza: ${lesson}.
+`.trim(),
+
+    index: `
+Escribe un índice estructurado usando EXACTAMENTE estos títulos:
+
+${storyTitles.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+
+Después añade:
+- Página final emocional
+- Guía para adultos
+- Sobre la ONG
+
+No inventes títulos nuevos.
+`.trim(),
+
+    story: `
+Continúa el cuento "${storyTitle}".
+
+Reglas:
+- No reinicies la historia.
+- No repitas información.
+- Avanza la narrativa.
+- Objetivo de esta página: ${nextPageGoal}
+
+Texto anterior:
+"${previousPageText || ""}"
+`.trim(),
+
+    closing: `
+Escribe una página final emocional para cerrar todo el libro.
+Debe transmitir seguridad, crecimiento y calma.
+No repitas cuentos.
+`.trim(),
+
+    "adult-guide": `
+Escribe una guía clara para adultos:
+- Qué emociones trabaja el libro
+- Por qué son importantes
+- 3 consejos prácticos
+Tono profesional y cercano.
+`.trim(),
+
+    ngo: `
+Escribe una página informativa breve sobre una ONG que apoya el bienestar infantil.
+Tono inspirador, no comercial.
+`.trim()
+  };
+
   return `
-${brain || ""}
+${brain}
 
-CONTEXTO:
-- Edad objetivo: ${context.ageTarget}
-- Tipo de página: ${pageType}
-- Temática (cuento): ${theme || "emocional general"}
-- Enseñanza/objetivo: ${lesson || "aprendizaje emocional positivo"}
-- Personajes:
+CONTEXTO GLOBAL:
+Edad objetivo: ${ageTarget}
+Libro: ${bookTitle || ""}
+Subtítulo: ${bookSubtitle || ""}
+
+Personajes globales:
 ${chars}
 
-COHERENCIA:
-- Texto anterior (si existe): ${previousPageText ? `"${previousPageText}"` : "(no disponible)"}
-- Próximo objetivo (si existe): ${nextPageGoal || "(no disponible)"}
+TIPO DE PÁGINA: ${pageType}
 
-INSTRUCCIÓN PRINCIPAL:
-${pageInstruction}
+INSTRUCCIÓN:
+${instructionByType[pageType] || instructionByType.story}
 
 ESTILO:
 ${styleHints}
 
-REGLAS DE FORMATO:
-- Devuelve SOLO el texto final (sin explicar, sin etiquetas, sin títulos extra).
-- Máximo ${maxWords} palabras (estricto).
-- Sin violencia, sin miedo intenso, sin moralina directa.
-- Final emocional seguro (si aplica).
-
+REGLAS:
+- Máximo ${maxWords} palabras.
+- Devuelve SOLO el texto final.
+- Sin explicaciones.
 `.trim();
 }
