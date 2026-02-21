@@ -8,27 +8,20 @@ router.post("/", async (req, res) => {
 
     const { page, story, settings, brain, pages, characters } = req.body;
 
-    if (!page || !settings) {
-      return res.status(400).json({ error: "Faltan datos necesarios" });
+    if (!page || !settings || !pages) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        received: Object.keys(req.body || {})
+      });
     }
 
-    const context = {
-      pageType: page.type,
-      pageNumber: page.pageNumber,
-      storyTitle: story?.title,
-      theme: story?.theme,
-      lesson: story?.lesson,
-      characters: settings?.characters || [],
-      ageTarget: settings.ageTarget,
-      bookTitle: settings.bookTitle,
-      previousPageText: page.previousPageText || "",
-      nextPageGoal: page.nextPageGoal || ""
-    };
-
     const result = await generatePageText({
-      brain,
       page,
-      context
+      story,
+      settings,
+      brain,
+      pages,
+      characters
     });
 
     res.json({ text: result.text });
