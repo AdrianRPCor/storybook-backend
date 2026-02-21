@@ -6,7 +6,7 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   try {
 
-    const { page, story, settings, brain } = req.body;
+    const { page, story, settings, brain, pages, characters } = req.body;
 
     if (!page || !settings) {
       return res.status(400).json({ error: "Faltan datos necesarios" });
