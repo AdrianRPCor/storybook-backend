@@ -24,7 +24,7 @@ router.post("/", async (req, res) => {
       characters
     });
 
-    res.json({ text: result.text });
+    res.json(result);
 
   } catch (err) {
     console.error("❌ Error generando texto:", err);
