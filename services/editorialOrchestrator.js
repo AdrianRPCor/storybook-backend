@@ -7,6 +7,22 @@ import { generateText } from "./openaiText.js";
 
 export async function generatePageText({ page, story, settings, brain, pages }) {
 
+  // =========================
+  // 🔒 VALIDACIÓN DE CONTRATO
+  // =========================
+
+  if (!settings || typeof settings !== "object") {
+    throw new Error("Invalid settings object in generatePageText");
+  }
+
+  if (!page || typeof page !== "object") {
+    throw new Error("Invalid page object in generatePageText");
+  }
+
+  if (!Array.isArray(pages)) {
+    throw new Error("Invalid pages array in generatePageText");
+  }
+
   const pageType = page.type;
   const ageTarget = settings.ageTarget;
 
