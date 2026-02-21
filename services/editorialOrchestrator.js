@@ -45,30 +45,6 @@ export async function generatePageText({ page, story, settings, brain, pages }) 
   }
 
   // =========================
-  // 1️⃣ CONTEXTO NARRATIVO REAL
-  // =========================
-
-  let previousPageText = "";
-  let nextPageGoal = "";
-
-  if (story && pageType === "story") {
-
-    const storyPages = story.pages || [];
-
-    const index = storyPages.findIndex(id => id === page.id);
-
-    if (index > 0) {
-      previousPageText = storyPages[index - 1];
-    }
-
-    const total = storyPages.length;
-
-    if (index === 0) nextPageGoal = "Presentar situación inicial emocional.";
-    else if (index === total - 1) nextPageGoal = "Cerrar conflicto emocional.";
-    else nextPageGoal = "Desarrollar conflicto y avance emocional.";
-  }
-
-  // =========================
   // 2️⃣ LIMITES EDITORIALES
   // =========================
 
