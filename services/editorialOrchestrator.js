@@ -5,7 +5,14 @@ import { buildPrompt } from "./promptBuilder.js";
 import { cleanText, enforceSingleBlock, countWords } from "./textPostprocess.js";
 import { generateText } from "./openaiText.js";
 
-export async function generatePageText({ page, story, settings, brain, pages }) {
+export async function generatePageText({
+  page,
+  story,
+  settings,
+  brain,
+  pages,
+  characters
+}) {
 
   // =========================
   // 🔒 VALIDACIÓN DE CONTRATO
@@ -27,29 +34,28 @@ export async function generatePageText({ page, story, settings, brain, pages }) 
   const ageTarget = settings.ageTarget;
 
   // =============================
-  // 🧠 COHERENCIA GLOBAL REAL
+  // 🧠 COHERENCIA NARRATIVA REAL
   // =============================
 
   let previousPageText = "";
   let nextPageGoal = "";
 
-  // Ordenar páginas por orden real
   const orderedPages = [...pages].sort((a, b) => a.order - b.order);
 
-  // Encontrar índice actual
   const currentIndex = orderedPages.findIndex(p => p.id === page.id);
 
-  // Texto anterior REAL
-  if (currentIndex > 0) {
-    previousPageText = orderedPages[currentIndex - 1]?.text || "";
-  }
+  // 🔹 Coherencia SOLO dentro del mismo cuento
+  if (pageType === "story" && story) {
 
-    // Definir objetivo narrativo según posición
-    if (pageType === "story" && story) {
+    const storyPages = orderedPages.filter(
+      p => p.storyId === story.id && p.type === "story"
+    );
 
-      const storyPages = orderedPages.filter(p => p.storyId === story.id && p.type === "story");
+    const storyIndex = storyPages.findIndex(p => p.id === page.id);
 
-      const storyIndex = storyPages.findIndex(p => p.id === page.id);
+    if (storyIndex > 0) {
+      previousPageText = storyPages[storyIndex - 1]?.text || "";
+    }
 
     if (storyIndex === 0) {
       nextPageGoal = "Introducir situación emocional inicial.";
@@ -61,36 +67,38 @@ export async function generatePageText({ page, story, settings, brain, pages }) 
   }
 
   // =========================
-  // 2️⃣ LIMITES EDITORIALES
+  // 📏 LIMITES EDITORIALES
   // =========================
 
   const maxWords = getMaxWords({ pageType, ageTarget });
   const styleHints = getStyleHints({ pageType, ageTarget });
 
   // =========================
-  // 3️⃣ CONSTRUIR CONTEXTO
+  // 🧱 CONTEXTO GLOBAL
   // =========================
 
   const context = {
     pageType,
     pageNumber: page.pageNumber,
     storyTitle: story?.title,
+    storyIndex: story?.index,
     theme: story?.theme,
     lesson: story?.theme,
-    characters: settings.characters || [],
+    characters: characters || [],
     bookTitle: settings.bookTitle,
+    bookSubtitle: settings.bookSubtitle,
+    storyTitles: settings.storyTitles || [],
     ageTarget,
     previousPageText,
     nextPageGoal
   };
 
   // =========================
-  // 4️⃣ PROMPT
+  // 🧠 CONSTRUIR PROMPT
   // =========================
 
   const prompt = buildPrompt({
     brain,
-    page,
     context,
     maxWords,
     styleHints
@@ -101,18 +109,19 @@ export async function generatePageText({ page, story, settings, brain, pages }) 
   text = enforceSingleBlock(cleanText(text));
 
   // =========================
-  // 5️⃣ VALIDACIÓN + RETRIES
+  // 🔁 CONTROL DE LONGITUD
   // =========================
 
   const maxRetries = 2;
 
   for (let i = 0; i < maxRetries; i++) {
+
     const words = countWords(text);
     if (words <= maxWords) break;
 
     const tightenPrompt = `
 Recorta el siguiente texto a máximo ${maxWords} palabras.
-Mantén sentido y tono infantil.
+Mantén coherencia narrativa y tono infantil.
 Devuelve SOLO el texto final:
 
 "${text}"
