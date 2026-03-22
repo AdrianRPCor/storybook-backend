@@ -1,7 +1,6 @@
 // services/textConstraints.js
 
 export function getMaxWords({ pageType, ageTarget }) {
-  // Ajuste simple por edad (puedes afinar después)
   const ageFactor =
     ageTarget?.includes("3") ? 0.75 :
     ageTarget?.includes("4") ? 0.85 :
@@ -10,12 +9,15 @@ export function getMaxWords({ pageType, ageTarget }) {
     ageTarget?.includes("7") ? 1.25 : 1.0;
 
   const base = {
-    cover: 12,        // título + subtítulo (poquísimo)
-    "story-cover": 10, // título del cuento
-    index: 120,
-    parents: 220,
-    story: 90,        // texto de página con ilustración
-    blank: 0
+    cover:         12,
+    "story-cover": 10,
+    index:        120,
+    parents:      220,
+    story:         90,
+    closing:      120,
+    "adult-guide": 220,
+    ngo:          120,
+    blank:          0
   };
 
   const b = base[pageType] ?? 90;
@@ -26,11 +28,17 @@ export function getStyleHints({ pageType, ageTarget }) {
   if (pageType === "cover" || pageType === "story-cover") {
     return "Corto, emocional, memorable. Sin signos raros. Sin comillas.";
   }
-  if (pageType === "parents") {
+  if (pageType === "parents" || pageType === "adult-guide") {
     return "Claro, práctico, empático. Sin juzgar. Consejos accionables.";
   }
   if (pageType === "index") {
     return "Lista simple y clara. Sin florituras.";
+  }
+  if (pageType === "closing") {
+    return "Cálido, esperanzador, cierre emocional positivo. Frases cortas.";
+  }
+  if (pageType === "ngo") {
+    return "Inspirador, breve, informativo. Tono humano y cercano.";
   }
   // story
   return ageTarget?.includes("3")

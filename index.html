@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storybook KDP Editor</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+  <style>
+/* =========================================================
+   SBK THEME PRO — ESTILOS COMPLETOS
+========================================================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+#sbk-app.sbk{
+  position:relative;width:100%;max-width:100%;margin:0;padding:0;
+  overflow-x:hidden;
+  --bg:#f5f7fb;--panel:#ffffff;--panel2:#f9fafb;--text:#0f172a;
+  --muted:#64748b;--line:#e5e7eb;--blue:#2563eb;--blue-bg:#e8efff;
+  --danger:#9a3412;--danger-bg:#fff7ed;
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  background:var(--bg);
+}
+#sbk-app.sbk,#sbk-app.sbk *{box-sizing:border-box}
+#sbk-app .sbk__container{max-width:100%;margin:0 auto;padding:0 12px 24px}
+#sbk-app.sbk .sbk__muted,#sbk-app.sbk .sbk__hint{color:var(--muted)}
+#sbk-app.sbk button,#sbk-app.sbk input,#sbk-app.sbk select,#sbk-app.sbk textarea{font:inherit;letter-spacing:normal}
+
+/* TOPBAR */
+#sbk-app .sbk__topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+#sbk-app .sbk__brand{display:flex;flex-direction:column;gap:4px;min-width:240px}
+#sbk-app .sbk__title{font-weight:800;font-size:14px}
+#sbk-app .sbk__subtitle{font-size:12px;color:var(--muted)}
+#sbk-app .sbk__topActions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center}
+
+/* GRID 4 COLS */
+#sbk-app .sbk__grid3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start}
+
+/* PERSONAJES */
+#sbk-app .sbk__gridCharacters{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:12px}
+#sbk-app .sbk__characterCard{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+#sbk-app .sbk__characterImage{width:100%;aspect-ratio:1/1;border-radius:12px;background:linear-gradient(180deg,#eef2f7,#e5e7eb);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);margin-bottom:10px;background-size:cover;background-position:center}
+
+/* LAYOUT */
+#sbk-app .sbk__layout{display:grid;grid-template-columns:390px 1fr;min-height:calc(100vh - 64px)}
+#sbk-app .sbk__sidebar{background:var(--panel2);border-right:1px solid var(--line);padding:12px;overflow:auto}
+#sbk-app .sbk__main{padding:14px;overflow:auto}
+#sbk-app .sbk__columnButtons{flex-direction:column;gap:6px;margin-top:12px}
+
+/* CARDS */
+#sbk-app .sbk__card,#sbk-app .sbk__editorCard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+#sbk-app .sbk__card+.sbk__card{margin-top:12px}
+#sbk-app .sbk__cardHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+#sbk-app .sbk__cardTitle{font-weight:800;font-size:13px}
+
+/* FORMS */
+#sbk-app .sbk__label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);margin-bottom:10px}
+#sbk-app .sbk__input,#sbk-app .sbk__select,#sbk-app .sbk__textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:12px;color:var(--text)}
+#sbk-app .sbk__textarea{resize:vertical}
+#sbk-app .sbk__color{padding:0;height:36px;border-radius:10px}
+
+/* BUTTONS */
+#sbk-app .sbk__btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:999px;padding:4px 8px;font-size:10px;line-height:1.1;cursor:pointer;white-space:nowrap}
+#sbk-app .sbk__btn:hover{background:rgba(15,23,42,0.03)}
+#sbk-app .sbk__btn--small{padding:6px 10px;font-size:11px}
+#sbk-app .sbk__btn--primary{background:var(--blue-bg);color:var(--blue);border-color:rgba(37,99,235,0.25)}
+#sbk-app .sbk__btn--danger{background:var(--danger-bg);color:var(--danger);border-color:rgba(154,52,18,0.20)}
+#sbk-app .sbk__btn--ghost{background:transparent;border-color:transparent;color:var(--muted)}
+
+/* TAGS */
+#sbk-app .sbk__tag{font-size:10px;padding:4px 8px;border-radius:999px;background:#f3f4f6;border:1px solid var(--line);color:var(--muted)}
+
+/* ROWS */
+#sbk-app .sbk__row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#sbk-app .sbk__row--center{justify-content:center;align-items:center;width:fit-content;margin-left:auto;margin-right:auto}
+
+/* LIST */
+#sbk-app .sbk__list{display:flex;flex-direction:column;gap:8px}
+#sbk-app .sbk__item{width:100%;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px;text-align:left;cursor:pointer}
+#sbk-app .sbk__item:hover{background:rgba(15,23,42,0.02)}
+#sbk-app .sbk__item--active{outline:2px solid rgba(37,99,235,0.18);border-color:rgba(37,99,235,0.25)}
+#sbk-app .sbk__itemLeft{display:flex;flex-direction:column;gap:4px}
+#sbk-app .sbk__itemTitle{font-weight:750;font-size:12px}
+#sbk-app .sbk__itemMeta{font-size:11px;color:var(--muted)}
+#sbk-app .sbk__item,#sbk-app .sbk__item span{color:var(--text)}
+
+/* EDITOR */
+#sbk-app .sbk__editorHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+#sbk-app .sbk__editorTitle{font-weight:900;font-size:14px}
+#sbk-app .sbk__gridEditor{display:flex;flex-direction:column;align-items:center;gap:24px}
+
+/* PAGE MOCK */
+#sbk-app .sbk__pageMock{width:420px;max-width:90%;aspect-ratio:2/3;margin:0 auto;position:relative;background:white;border:1px solid #ddd;box-shadow:0 10px 30px rgba(0,0,0,0.08)}
+#sbk-app .sbk__pageInner{position:absolute;inset:8% 8%}
+#sbk-app .sbk__imgMock{height:60%;border-radius:10px;background:linear-gradient(180deg,#eef2f7,#e5e7eb);display:flex;align-items:center;justify-content:center;font-size:12px;background-size:cover;background-position:center}
+#sbk-app .sbk__pageTextPreview{margin-top:4%;background:var(--textBoxColor,#f9fafb);border-radius:10px;padding:14px;font-size:14px;line-height:1.45;color:#111827;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+
+/* MODOS */
+#sbk-app .sbk__pageMock--story .sbk__pageTextPreview{height:35%}
+#sbk-app .sbk__pageMock--textOnly .sbk__pageTextPreview{height:100%;margin-top:0;background:transparent}
+#sbk-app .sbk__pageMock--textOnly .sbk__imgMock{display:none}
+#sbk-app .sbk__pageMock--cover .sbk__imgMock{flex:1 1 auto}
+
+/* PORTADA PREVIEW */
+#sbk-app .sbk__coverPreviewTitle{font-weight:900;font-size:26px;line-height:1.1;text-align:center;margin-bottom:10px}
+#sbk-app .sbk__coverPreviewSubtitle{font-size:16px;line-height:1.3;text-align:center}
+
+/* ÍNDICE */
+#sbk-app .sbk__indexWrapper{width:100%;height:100%;padding:14% 10% 8%;font-family:Georgia,serif;display:flex;flex-direction:column}
+#sbk-app .sbk__indexHeading{text-align:center;font-size:22px;font-weight:900;letter-spacing:3px;margin-bottom:40px}
+#sbk-app .sbk__indexList{display:flex;flex-direction:column;gap:12px;font-size:15px}
+#sbk-app .sbk__indexRow{display:flex;align-items:baseline}
+#sbk-app .sbk__indexTitle{white-space:normal;flex-shrink:0;max-width:75%}
+#sbk-app .sbk__indexDots{flex:1;border-bottom:1px dotted #999;margin:0 8px;transform:translateY(-3px)}
+#sbk-app .sbk__indexPage{width:28px;text-align:right}
+
+/* CONTROLES EDITOR */
+#sbk-app .sbk__controls{width:100%;max-width:600px}
+
+/* MUTED */
+#sbk-app .sbk__muted--tiny{font-size:12px;line-height:1.35}
+
+/* SPINNER */
+#sbk-app .sbk__spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sbk-spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sbk-spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+#sbk-toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.sbk-toast-msg{background:#0f172a;color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.25);animation:sbk-fadein .25s ease;pointer-events:none}
+.sbk-toast-msg.success{background:#15803d}
+.sbk-toast-msg.error{background:#9a3412}
+@keyframes sbk-fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* PROGRESS BAR */
+#sbk-progress{display:none;position:fixed;top:0;left:0;right:0;z-index:9998;height:3px;background:var(--blue);transition:width .3s}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  #sbk-app .sbk__grid3{grid-template-columns:1fr 1fr}
+  #sbk-app .sbk__layout{grid-template-columns:1fr}
+  #sbk-app .sbk__sidebar{border-right:none;border-bottom:1px solid var(--line)}
+}
+@media(max-width:720px){
+  #sbk-app .sbk__grid3{grid-template-columns:1fr}
+}
+  </style>
+</head>
+<body style="background:#f5f7fb">
+
+<!-- PROGRESS BAR -->
+<div id="sbk-progress"></div>
+<!-- TOAST CONTAINER -->
+<div id="sbk-toast"></div>
+
+<div id="sbk-app" class="sbk" aria-label="Storybook KDP Editor">
+
+  <!-- TOPBAR -->
+  <header class="sbk__topbar">
+    <div class="sbk__brand">
+      <div class="sbk__title">Editor de Cuentos Infantiles · KDP</div>
+      <div class="sbk__subtitle">Tapa dura · Interior color premium · Trim 6×9" · Powered by Genspark AI</div>
+    </div>
+    <div class="sbk__topActions">
+      <button id="sbk-import-btn" class="sbk__btn sbk__btn--ghost">⬆ Importar JSON</button>
+      <button id="sbk-export-json" class="sbk__btn">⬇ Exportar JSON</button>
+      <button id="sbk-export-pdf-interior" class="sbk__btn sbk__btn--primary">📄 Exportar PDF interior</button>
+      <button id="sbk-export-pdf-cover" class="sbk__btn sbk__btn--primary">🎨 Exportar portada</button>
+    </div>
+  </header>
+
+  <div class="sbk__container">
+
+    <!-- CONFIG GLOBAL 4 COLS -->
+    <div class="sbk__grid3">
+
+      <!-- COL 1: Estructura -->
+      <section class="sbk__card" style="margin-top:12px">
+        <div class="sbk__cardTitle">Estructura del libro</div>
+        <label class="sbk__label">Número de cuentos
+          <input id="sbk-num-stories" class="sbk__input" type="number" value="5" min="1" max="30">
+        </label>
+        <label class="sbk__label">Páginas por cuento (default)
+          <input id="sbk-pages-per-story" class="sbk__input" type="number" value="10" min="6" max="40">
+        </label>
+        <label class="sbk__label">Edad objetivo
+          <select id="sbk-age" class="sbk__select">
+            <option>3–4</option><option>4–5</option>
+            <option selected>5–6</option><option>6–7</option><option>7–8</option>
+          </select>
+        </label>
+        <div class="sbk__row sbk__row--center sbk__columnButtons">
+          <button class="sbk__btn sbk__btn--primary" id="sbk-generate-text">✍️ Generar texto</button>
+          <button class="sbk__btn sbk__btn--primary" id="sbk-generate-images">🎨 Generar imágenes</button>
+          <button class="sbk__btn" id="sbk-save-btn">💾 Guardar</button>
+          <button id="sbk-reset-book" class="sbk__btn sbk__btn--danger">🗑 Resetear libro</button>
+        </div>
+      </section>
+
+      <!-- COL 2: Temáticas -->
+      <section class="sbk__card">
+        <div class="sbk__cardTitle">Temáticas por cuento</div>
+        <div class="sbk__muted sbk__muted--tiny">Una temática/emoción por cuento</div>
+        <div id="sbk-story-themes" style="margin-top:10px"></div>
+      </section>
+
+      <!-- COL 3: Títulos -->
+      <section class="sbk__card">
+        <div class="sbk__cardTitle">Títulos</div>
+        <label class="sbk__label">Título del libro
+          <input id="sbk-book-title" class="sbk__input" type="text" placeholder="Ej: Historias para crecer feliz">
+        </label>
+        <label class="sbk__label">Subtítulo
+          <input id="sbk-book-subtitle" class="sbk__input" type="text" placeholder="Ej: 5 cuentos para aprender emociones">
+        </label>
+        <div id="sbk-story-titles"></div>
+      </section>
+
+      <!-- COL 4: Estilo -->
+      <section class="sbk__card">
+        <div class="sbk__cardTitle">Estilo y formato</div>
+        <label class="sbk__label">Trim KDP
+          <select class="sbk__select" id="sbk-trim">
+            <option selected>6×9</option><option>8.5×8.5</option><option>A5</option>
+          </select>
+        </label>
+        <label class="sbk__label">Estilo visual
+          <select class="sbk__select" id="sbk-visual-style">
+            <option selected>Ilustración infantil (cartoon suave)</option>
+            <option>Acuarela suave</option><option>Digital pastel</option>
+          </select>
+        </label>
+        <label class="sbk__label">Paleta de color
+          <select class="sbk__select" id="sbk-palette">
+            <option selected>Pastel calmada</option>
+            <option>Vibrante infantil</option><option>Neutra minimal</option>
+          </select>
+        </label>
+        <label class="sbk__label">Color páginas en blanco
+          <input id="sbk-blank-page-color" class="sbk__input sbk__color" type="color" value="#ffffff">
+        </label>
+        <label class="sbk__label">Color recuadro de texto
+          <input id="sbk-textbox-color" class="sbk__input sbk__color" type="color" value="#f9fafb">
+        </label>
+      </section>
+    </div>
+
+    <!-- PERSONAJES -->
+    <section class="sbk__card" id="sbk-characters-card" style="margin-top:12px">
+      <div class="sbk__cardHeader">
+        <div>
+          <div class="sbk__cardTitle">Personajes del libro</div>
+          <div class="sbk__muted">Define los personajes principales que aparecerán en las historias</div>
+        </div>
+      </div>
+      <div class="sbk__row" style="margin-bottom:12px">
+        <label class="sbk__label" style="margin:0">
+          <select id="sbk-character-mode" class="sbk__select">
+            <option value="global" selected>Personajes globales (todo el libro)</option>
+            <option value="per-story">Personajes por cuento</option>
+          </select>
+        </label>
+        <label class="sbk__label" style="margin:0">Número de personajes
+          <input id="sbk-character-count" class="sbk__input" type="number" value="1" min="0" max="10">
+        </label>
+      </div>
+      <div id="sbk-characters-container" class="sbk__gridCharacters"></div>
+    </section>
+
+    <!-- LAYOUT PRINCIPAL -->
+    <div class="sbk__layout">
+
+      <!-- SIDEBAR -->
+      <aside class="sbk__sidebar">
+        <section class="sbk__card">
+          <div class="sbk__cardHeader">
+            <div>
+              <div class="sbk__cardTitle">Maquetación del libro</div>
+              <div class="sbk__muted">Orden real de páginas (KDP)</div>
+            </div>
+          </div>
+          <div class="sbk__list" id="sbk-page-list">
+            <div class="sbk__muted sbk__muted--tiny" style="padding:8px">
+              Pulsa "Generar texto" para crear la estructura del libro
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="sbk__main">
+
+        <!-- EDITOR -->
+        <section class="sbk__editorCard">
+          <div class="sbk__editorHeader">
+            <div>
+              <div class="sbk__editorTitle">Editor de página</div>
+              <div class="sbk__muted" id="sbk-editor-subtitle">Preview real 6×9</div>
+            </div>
+            <div class="sbk__row">
+              <button id="sbk-regen-text"  class="sbk__btn sbk__btn--small">✍️ Regenerar texto</button>
+              <button id="sbk-regen-image" class="sbk__btn sbk__btn--small">🎨 Regenerar imagen</button>
+              <button id="sbk-save-page"   class="sbk__btn sbk__btn--small">💾 Guardar página</button>
+            </div>
+          </div>
+
+          <div class="sbk__editorBody">
+            <div class="sbk__gridEditor">
+              <div class="sbk__pageMock" id="sbk-page-mock">
+                <div class="sbk__pageInner">
+                  <div class="sbk__imgMock" id="sbk-img-mock">Imagen</div>
+                  <div class="sbk__pageTextPreview" id="sbk-text-preview"></div>
+                </div>
+              </div>
+              <div class="sbk__controls">
+                <label class="sbk__label">Texto de la página
+                  <textarea id="sbk-editor-text" class="sbk__textarea" rows="6" placeholder="El texto de esta página aparecerá aquí..."></textarea>
+                </label>
+                <label class="sbk__label">Prompt de imagen
+                  <textarea id="sbk-editor-prompt" class="sbk__textarea" rows="4" placeholder="Describe la ilustración de esta página..."></textarea>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CEREBRO IA -->
+        <section class="sbk__card" style="margin-top:12px">
+          <div class="sbk__cardHeader">
+            <div>
+              <div class="sbk__cardTitle">Cerebro IA (psicólogo/editorial)</div>
+              <div class="sbk__muted">Instrucciones maestras para el generador de IA</div>
+            </div>
+            <span class="sbk__tag">GLOBAL</span>
+          </div>
+          <label class="sbk__label">Instrucciones maestras
+            <textarea id="sbk-brain-text" class="sbk__textarea" rows="8"></textarea>
+          </label>
+          <div class="sbk__row">
+            <button id="sbk-save-brain" class="sbk__btn">💾 Guardar cerebro</button>
+            <button id="sbk-restore-brain" class="sbk__btn sbk__btn--ghost">↩ Restaurar</button>
+          </div>
+        </section>
+
+        <!-- HISTÓRICO -->
+        <section class="sbk__card" id="sbk-history-card" style="margin-top:12px">
+          <div class="sbk__cardHeader">
+            <div>
+              <div class="sbk__cardTitle">Histórico de libros</div>
+              <div class="sbk__muted">Todos los libros guardados</div>
+            </div>
+            <button class="sbk__btn sbk__btn--small" id="sbk-save-to-history">📚 Guardar en histórico</button>
+          </div>
+          <div class="sbk__list" id="sbk-history-list">
+            <div class="sbk__muted sbk__muted--tiny">Aún no hay libros guardados</div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+<input id="sbk-import-input" type="file" accept="application/json" hidden>
+
+<script>
+/* =========================================================
+   STORYBOOK KDP EDITOR — JS COMPLETO v2.0
+   - Genspark AI integrado
+   - getCurrentPage() definido y funcional
+   - PDF interior + portada conectados
+   - Todos los bugs corregidos
+========================================================= */
+
+// ============================================================
+//  API BASE — apunta al backend local
+// ============================================================
+// Siempre usa el mismo servidor que sirve el frontend
+const API_BASE = `${window.location.protocol}//${window.location.host}/api/v1`;
+
+// ============================================================
+//  MODELO DEL LIBRO
+// ============================================================
+const bookData = {
+  meta: { id: null, bookTitle: "", bookSubtitle: "", backCoverText: "", createdAt: null, updatedAt: null },
+  settings: {
+    numStories: 5, pagesPerStory: 10, ageTarget: "5–6",
+    storyThemes: [], storyTitles: [],
+    trim: "6×9", visualStyle: "Ilustración infantil (cartoon suave)",
+    palette: "Pastel calmada", blankPageColor: "#ffffff", textBoxColor: "#f9fafb"
+  },
+  specialPages: { index: { text: "" }, parents: { text: "" } },
+  stories: [], pages: [],
+  characters: { mode: "global", global: [], perStory: {} }
+};
+
+const editorState = { mode: "story", currentPageId: null };
+
+// ============================================================
+//  CEREBRO IA — TEXTO POR DEFECTO
+// ============================================================
+const DEFAULT_BRAIN_TEXT = `Eres un autor profesional de cuentos infantiles con formación en psicología infantil y pedagogía emocional.
+
+Tu objetivo es crear cuentos para niños de entre {EDAD_OBJETIVO}, pensados para libros físicos vendidos en Amazon KDP.
+
+REGLAS GENERALES:
+- Usa un lenguaje claro, cálido y fácil de entender para niños.
+- Las frases deben ser cortas o medias, nunca complejas.
+- El tono debe ser siempre positivo, calmado y seguro.
+- No uses palabras técnicas, violentas ni negativas.
+- No moralices directamente, muestra el aprendizaje a través de la historia.
+- Siempre debe haber cierre emocional positivo.
+
+ESTRUCTURA DE LOS CUENTOS:
+- Cada cuento tiene un protagonista infantil identificable.
+- El protagonista enfrenta una situación emocional cotidiana.
+- El conflicto se resuelve de forma gradual y respetuosa.
+
+PÁGINAS DE HISTORIA:
+- Cada página cuenta una pequeña parte de la historia.
+- El texto debe caber cómodamente en una página 6x9 con ilustración.
+- No repitas información entre páginas.
+
+PÁGINA PARA PADRES:
+- Explica qué emoción se trabaja.
+- Da orientación clara y práctica para acompañar al niño.
+
+PORTADA:
+- Título corto, emocional y atractivo.
+- Subtítulo enfocado al beneficio emocional.
+
+Nunca menciones que eres una IA. Escribe siempre como un autor humano experto.`;
+
+// ============================================================
+//  UTILIDADES
+// ============================================================
+function uid() { return "p_" + Math.random().toString(36).slice(2, 9); }
+
+function toast(msg, type = "info") {
+  const container = document.getElementById("sbk-toast");
+  if (!container) return;
+  const el = document.createElement("div");
+  el.className = `sbk-toast-msg ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function setProgress(pct) {
+  const bar = document.getElementById("sbk-progress");
+  if (!bar) return;
+  if (pct <= 0) { bar.style.display = "none"; bar.style.width = "0%"; return; }
+  bar.style.display = "block";
+  bar.style.width = pct + "%";
+  if (pct >= 100) setTimeout(() => setProgress(0), 600);
+}
+
+function setButtonLoading(btn, loading, originalText) {
+  if (!btn) return;
+  if (loading) {
+    btn.disabled = true;
+    btn.dataset.origText = btn.textContent;
+    btn.innerHTML = `<span class="sbk__spinner"></span>${originalText || "Procesando..."}`;
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.origText || originalText || btn.textContent;
+  }
+}
+
+// ============================================================
+//  ✅ getCurrentPage — FUNCIÓN CRÍTICA (faltaba en original)
+// ============================================================
+function getCurrentPage() {
+  if (!editorState.currentPageId) return null;
+  return bookData.pages.find(p => p.id === editorState.currentPageId) || null;
+}
+
+// ============================================================
+//  PERSISTENCIA
+// ============================================================
+const STORAGE_KEY = "sbk-project-v2";
+const HISTORY_KEY = "sbk-history-v2";
+
+function saveProject() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ bookData, editorState }));
+}
+
+function loadProject() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.bookData) {
+      Object.assign(bookData, parsed.bookData);
+      if (!Array.isArray(bookData.settings.storyThemes)) bookData.settings.storyThemes = [];
+      if (!Array.isArray(bookData.settings.storyTitles)) bookData.settings.storyTitles = [];
+      ensureCharactersData();
+      syncSettingsUI();
+      renderStoryThemes();
+      renderStoryTitles();
+      renderCharacters();
+    }
+    if (parsed.editorState) Object.assign(editorState, parsed.editorState);
+    renderPageList();
+    if (editorState.currentPageId) selectBookPage(editorState.currentPageId);
+  } catch(e) { console.error("Error cargando proyecto", e); }
+}
+
+function resetProject() {
+  if (!confirm("¿Seguro que quieres borrar el proyecto actual?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// ============================================================
+//  PERSONAJES
+// ============================================================
+function ensureCharactersData() {
+  if (!bookData.characters) bookData.characters = { mode: "global", global: [], perStory: {} };
+  if (!Array.isArray(bookData.characters.global)) bookData.characters.global = [];
+  if (!bookData.characters.perStory) bookData.characters.perStory = {};
+  if (!bookData.characters.mode) bookData.characters.mode = "global";
+}
+
+function renderCharacters() {
+  const container = document.getElementById("sbk-characters-container");
+  if (!container) return;
+  container.innerHTML = "";
+  const list = bookData.characters.global || [];
+  list.forEach(char => {
+    const card = document.createElement("div");
+    card.className = "sbk__characterCard";
+
+    const image = document.createElement("div");
+    image.className = "sbk__characterImage";
+    if (char.imageUrl) { image.style.backgroundImage = `url("${char.imageUrl}")`; }
+    else { image.textContent = "Imagen personaje"; }
+
+    const regenBtn = document.createElement("button");
+    regenBtn.className = "sbk__btn sbk__btn--small";
+    regenBtn.style.marginBottom = "8px";
+    regenBtn.textContent = "🎨 Regenerar imagen";
+    regenBtn.addEventListener("click", async () => {
+      const prompt = `Ilustración infantil personaje libro. Nombre: ${char.name}. Descripción: ${char.description}. Estilo: ${bookData.settings.visualStyle}. Paleta: ${bookData.settings.palette}. Fondo blanco limpio.`;
+      try {
+        setButtonLoading(regenBtn, true, "Generando...");
+        const url = await generateImageFromAPI(prompt, false);
+        char.imageUrl = url;
+        renderCharacters();
+        saveProject();
+        toast("Imagen del personaje generada ✅", "success");
+      } catch(e) {
+        toast("Error generando imagen del personaje", "error");
+      } finally {
+        setButtonLoading(regenBtn, false);
+      }
+    });
+
+    const nameInput = document.createElement("input");
+    nameInput.className = "sbk__input";
+    nameInput.placeholder = "Nombre del personaje";
+    nameInput.value = char.name || "";
+    nameInput.style.marginBottom = "6px";
+    nameInput.addEventListener("input", () => { char.name = nameInput.value; saveProject(); });
+
+    const descArea = document.createElement("textarea");
+    descArea.className = "sbk__textarea";
+    descArea.rows = 3;
+    descArea.placeholder = "Descripción física y personalidad";
+    descArea.value = char.description || "";
+    descArea.addEventListener("input", () => { char.description = descArea.value; saveProject(); });
+
+    card.appendChild(image);
+    card.appendChild(regenBtn);
+    card.appendChild(nameInput);
+    card.appendChild(descArea);
+    container.appendChild(card);
+  });
+}
+
+// ============================================================
+//  TEMÁTICAS Y TÍTULOS
+// ============================================================
+function renderStoryThemes() {
+  const container = document.getElementById("sbk-story-themes");
+  if (!container) return;
+  container.innerHTML = "";
+  const count = Number(bookData.settings.numStories) || 0;
+  while (bookData.settings.storyThemes.length < count) bookData.settings.storyThemes.push("");
+  while (bookData.settings.storyThemes.length > count) bookData.settings.storyThemes.pop();
+  for (let i = 0; i < count; i++) {
+    const label = document.createElement("label");
+    label.className = "sbk__label";
+    const title = document.createElement("div");
+    title.textContent = `Cuento ${i + 1} · Temática`;
+    const input = document.createElement("input");
+    input.className = "sbk__input";
+    input.placeholder = "Ej: aprender a compartir sin enfado";
+    input.value = bookData.settings.storyThemes[i] || "";
+    input.addEventListener("input", () => { bookData.settings.storyThemes[i] = input.value; saveProject(); });
+    label.appendChild(title);
+    label.appendChild(input);
+    container.appendChild(label);
+  }
+}
+
+function renderStoryTitles() {
+  const container = document.getElementById("sbk-story-titles");
+  if (!container) return;
+  container.innerHTML = "";
+  const count = Number(bookData.settings.numStories) || 0;
+  while (bookData.settings.storyTitles.length < count) bookData.settings.storyTitles.push("");
+  while (bookData.settings.storyTitles.length > count) bookData.settings.storyTitles.pop();
+  for (let i = 0; i < count; i++) {
+    const label = document.createElement("label");
+    label.className = "sbk__label";
+    const titleDiv = document.createElement("div");
+    titleDiv.textContent = `Cuento ${i + 1} · Título`;
+    const input = document.createElement("input");
+    input.className = "sbk__input";
+    input.placeholder = "Ej: El dragón que aprendió a compartir";
+    const story = bookData.stories[i];
+    input.value = story?.title || bookData.settings.storyTitles[i] || "";
+    input.addEventListener("input", () => {
+      bookData.settings.storyTitles[i] = input.value;
+      if (bookData.stories[i]) bookData.stories[i].title = input.value;
+      renderPageList();
+      saveProject();
+    });
+    label.appendChild(titleDiv);
+    label.appendChild(input);
+    container.appendChild(label);
+  }
+}
+
+// ============================================================
+//  SYNC UI → MODEL
+// ============================================================
+function syncSettingsUI() {
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+  set("sbk-num-stories",      bookData.settings.numStories);
+  set("sbk-pages-per-story",  bookData.settings.pagesPerStory);
+  set("sbk-age",              bookData.settings.ageTarget);
+  set("sbk-blank-page-color", bookData.settings.blankPageColor);
+  set("sbk-textbox-color",    bookData.settings.textBoxColor);
+  set("sbk-book-title",       bookData.meta.bookTitle || "");
+  set("sbk-book-subtitle",    bookData.meta.bookSubtitle || "");
+  set("sbk-visual-style",     bookData.settings.visualStyle || "");
+  set("sbk-palette",          bookData.settings.palette || "");
+  ensureCharactersData();
+  set("sbk-character-count",  bookData.characters.global.length);
+  set("sbk-character-mode",   bookData.characters.mode || "global");
+}
+
+function bindGlobalInputs() {
+  const bind = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener("input", fn); };
+  const bindC = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener("change", fn); };
+  bind("sbk-num-stories",     () => { bookData.settings.numStories = Number(document.getElementById("sbk-num-stories").value); renderStoryThemes(); renderStoryTitles(); });
+  bind("sbk-pages-per-story", () => { bookData.settings.pagesPerStory = Number(document.getElementById("sbk-pages-per-story").value); });
+  bindC("sbk-age",            () => { bookData.settings.ageTarget = document.getElementById("sbk-age").value; });
+  bind("sbk-blank-page-color",() => { bookData.settings.blankPageColor = document.getElementById("sbk-blank-page-color").value; });
+  bind("sbk-textbox-color",   () => { bookData.settings.textBoxColor = document.getElementById("sbk-textbox-color").value; });
+  bind("sbk-book-title",      () => { bookData.meta.bookTitle = document.getElementById("sbk-book-title").value; });
+  bind("sbk-book-subtitle",   () => { bookData.meta.bookSubtitle = document.getElementById("sbk-book-subtitle").value; });
+  bindC("sbk-visual-style",   () => { bookData.settings.visualStyle = document.getElementById("sbk-visual-style").value; });
+  bindC("sbk-palette",        () => { bookData.settings.palette = document.getElementById("sbk-palette").value; });
+  bindC("sbk-trim",           () => { bookData.settings.trim = document.getElementById("sbk-trim").value; });
+}
+
+// ============================================================
+//  EDITOR — MODO Y UI
+// ============================================================
+function setEditorMode(mode) {
+  const pageMock = document.getElementById("sbk-page-mock");
+  const imgMock  = document.getElementById("sbk-img-mock");
+  if (!pageMock) return;
+  editorState.mode = mode;
+  pageMock.className = `sbk__pageMock sbk__pageMock--${mode}`;
+  const textOnlyModes = ["adult", "ngo", "index"];
+  if (textOnlyModes.includes(mode)) pageMock.classList.add("sbk__pageMock--textOnly");
+  if (mode === "cover") pageMock.style.aspectRatio = "2 / 3";
+  else pageMock.style.aspectRatio = "2 / 3";
+  if (imgMock && !["adult","ngo"].includes(mode)) {
+    const labels = { index:"Índice editorial", closing:"Cierre emocional", parents:"Página para padres", "story-cover":"Portada del cuento", cover:"Portada del libro" };
+    if (!imgMock.style.backgroundImage) imgMock.textContent = labels[mode] || "Imagen";
+  }
+}
+
+function loadPageIntoEditor(page) {
+  const textArea    = document.getElementById("sbk-editor-text");
+  const promptArea  = document.getElementById("sbk-editor-prompt");
+  const regenImgBtn = document.getElementById("sbk-regen-image");
+  const textPreview = document.getElementById("sbk-text-preview");
+  const imgMock     = document.getElementById("sbk-img-mock");
+  const subtitle    = document.getElementById("sbk-editor-subtitle");
+  if (!page) return;
+
+  // Actualizar subtítulo del editor
+  if (subtitle) subtitle.textContent = getPageLabel(page);
+
+  // Texto
+  if (textArea) {
+    if (page.type === "cover") {
+      textArea.value = `TÍTULO: ${page.title || ""}\nSUBTÍTULO: ${page.subtitle || ""}\n\nCONTRAPORTADA:\n${page.backText || ""}`;
+    } else {
+      textArea.value = page.text || "";
+    }
+  }
+
+  // Prompt
+  const noImage = ["index","adult-guide","ngo","blank"].includes(page.type);
+  if (promptArea) {
+    promptArea.value = page.imagePrompt || "";
+    promptArea.disabled = noImage;
+    promptArea.placeholder = noImage ? "Esta página no tiene imagen" : "Describe la ilustración...";
+  }
+  if (regenImgBtn) {
+    regenImgBtn.disabled = noImage;
+    regenImgBtn.style.opacity = noImage ? "0.4" : "1";
+  }
+
+  // Preview
+  if (textPreview) {
+    textPreview.innerHTML = "";
+    if (page.type === "cover") {
+      textPreview.innerHTML = `
+        <div class="sbk__coverPreviewTitle">${esc(page.title || "")}</div>
+        <div class="sbk__coverPreviewSubtitle">${esc(page.subtitle || "")}</div>`;
+    } else if (page.type === "index") {
+      renderIndexPreview(textPreview, page.text || "");
+    } else {
+      textPreview.textContent = page.text || "";
+    }
+  }
+
+  // Imagen
+  if (imgMock) {
+    imgMock.style.backgroundImage = "";
+    imgMock.textContent = "";
+    if (!noImage && page.imageUrl) {
+      imgMock.style.backgroundImage = `url("${page.imageUrl}")`;
+      imgMock.style.backgroundSize = "cover";
+      imgMock.style.backgroundPosition = "center";
+    } else {
+      const labels = { cover:"Portada del libro", "story-cover":"Portada del cuento", story:"Ilustración", closing:"Imagen cierre" };
+      imgMock.textContent = labels[page.type] || "Imagen";
+    }
+  }
+}
+
+function renderIndexPreview(container, text) {
+  const lines = (text || "").split("\n").filter(l => l.trim());
+  const formattedLines = lines.map(line => {
+    const match = line.match(/^(.*?)(\d+)\s*$/);
+    if (!match) return "";
+    const title = match[1].replace(/\.+$/, "").trim();
+    return `<div class="sbk__indexRow">
+      <span class="sbk__indexTitle">${esc(title)}</span>
+      <span class="sbk__indexDots"></span>
+      <span class="sbk__indexPage">${match[2]}</span>
+    </div>`;
+  }).join("");
+  container.innerHTML = `
+    <div class="sbk__indexWrapper">
+      <div class="sbk__indexHeading">ÍNDICE</div>
+      <div class="sbk__indexList">${formattedLines}</div>
+    </div>`;
+  container.style.background = "transparent";
+  container.style.padding = "0";
+}
+
+function esc(str) {
+  return (str || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ============================================================
+//  PERSISTENCIA DEL EDITOR EN TIEMPO REAL
+// ============================================================
+function bindEditorPersistence() {
+  const textArea   = document.getElementById("sbk-editor-text");
+  const promptArea = document.getElementById("sbk-editor-prompt");
+  if (!textArea || !promptArea) return;
+
+  textArea.addEventListener("input", () => {
+    const page = getCurrentPage();
+    if (!page) return;
+    const textPreview = document.getElementById("sbk-text-preview");
+    if (page.type === "cover") {
+      const lines = textArea.value.split("\n");
+      page.title    = lines[0]?.replace("TÍTULO:", "").trim() || "";
+      page.subtitle = lines[1]?.replace("SUBTÍTULO:", "").trim() || "";
+      const bi = lines.findIndex(l => l.includes("CONTRAPORTADA:"));
+      page.backText = bi >= 0 ? lines.slice(bi + 1).join("\n").trim() : "";
+      if (textPreview) textPreview.innerHTML = `
+        <div class="sbk__coverPreviewTitle">${esc(page.title)}</div>
+        <div class="sbk__coverPreviewSubtitle">${esc(page.subtitle)}</div>`;
+    } else {
+      page.text = textArea.value;
+      if (textPreview) {
+        if (page.type === "index") renderIndexPreview(textPreview, page.text);
+        else textPreview.textContent = page.text;
+      }
+    }
+    saveProject();
+  });
+
+  promptArea.addEventListener("input", () => {
+    const page = getCurrentPage();
+    if (!page) return;
+    page.imagePrompt = promptArea.value;
+    saveProject();
+  });
+}
+
+// ============================================================
+//  LISTA DE PÁGINAS
+// ============================================================
+function renderPageList() {
+  const pageList = document.getElementById("sbk-page-list");
+  if (!pageList) return;
+  pageList.innerHTML = "";
+  if (!bookData.pages.length) {
+    pageList.innerHTML = `<div class="sbk__muted sbk__muted--tiny" style="padding:8px">Pulsa "Generar texto" para crear la estructura del libro</div>`;
+    return;
+  }
+  bookData.pages.forEach(page => {
+    const btn = document.createElement("button");
+    btn.className = "sbk__item" + (page.id === editorState.currentPageId ? " sbk__item--active" : "");
+    btn.dataset.pageId = page.id;
+    btn.innerHTML = `<span>${getPageLabel(page)}</span>`;
+    btn.addEventListener("click", () => selectBookPage(page.id));
+    pageList.appendChild(btn);
+  });
+}
+
+function getPageLabel(page) {
+  const labels = {
+    cover:        "📘 Portada del libro",
+    blank:        "⬜ Página en blanco",
+    index:        "📑 Índice",
+    closing:      "🌈 Página final emocional",
+    "adult-guide":"📗 Guía para quien acompaña",
+    ngo:          "🤝 Página ONG"
+  };
+  if (page.type === "story-cover") return `📖 Portada · ${getStoryTitle(page.storyId)}`;
+  if (page.type === "story") return `📄 ${getStoryTitle(page.storyId)} · Pág ${page.pageNumber}`;
+  return labels[page.type] || page.type;
+}
+
+function getStoryTitle(storyId) {
+  return bookData.stories.find(s => s.id === storyId)?.title || "Cuento";
+}
+
+function selectBookPage(pageId) {
+  const page = bookData.pages.find(p => p.id === pageId);
+  if (!page) return;
+  editorState.currentPageId = pageId;
+  document.querySelectorAll(".sbk__item").forEach(el => el.classList.remove("sbk__item--active"));
+  const active = document.querySelector(`[data-page-id="${pageId}"]`);
+  if (active) active.classList.add("sbk__item--active");
+  const modeMap = { cover:"cover", "story-cover":"cover", index:"index", closing:"closing", "adult-guide":"adult", ngo:"ngo" };
+  setEditorMode(modeMap[page.type] || "story");
+  loadPageIntoEditor(page);
+  saveProject();
+}
+
+// ============================================================
+//  GENERACIÓN DE ESTRUCTURA DEL LIBRO
+// ============================================================
+function generateBookStructure() {
+  bookData.pages = [];
+  bookData.stories = [];
+  const numStories    = Number(bookData.settings.numStories);
+  const pagesPerStory = Number(bookData.settings.pagesPerStory);
+  let order = 0;
+
+  // Portada
+  bookData.pages.push({ id:uid(), type:"cover", title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
+  bookData.pages.push({ id:uid(), type:"index", text:"", imagePrompt:"", imageUrl:null, order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
+
+  // Cuentos
+  for (let i = 0; i < numStories; i++) {
+    const storyId = uid();
+    const story = { id:storyId, index:i, title:bookData.settings.storyTitles[i]||`Cuento ${i+1}`, theme:bookData.settings.storyThemes[i]||"", pages:[] };
+    bookData.pages.push({ id:uid(), type:"story-cover", storyId, title:story.title, imagePrompt:"", imageUrl:null, order:order++ });
+    for (let p = 0; p < pagesPerStory; p++) {
+      const page = { id:uid(), type:"story", storyId, pageNumber:p+1, text:"", imagePrompt:"", imageUrl:null, order:order++ };
+      story.pages.push(page.id);
+      bookData.pages.push(page);
+    }
+    bookData.stories.push(story);
+  }
+
+  // Cierre
+  bookData.pages.push({ id:uid(), type:"closing",      text:"", imagePrompt:"", imageUrl:null, order:order++ });
+  bookData.pages.push({ id:uid(), type:"adult-guide",  text:"", order:order++ });
+  bookData.pages.push({ id:uid(), type:"adult-guide",  text:"", order:order++ });
+  bookData.pages.push({ id:uid(), type:"ngo",          text:"", order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank",        color:bookData.settings.blankPageColor, order:order++ });
+}
+
+// ============================================================
+//  GENERAR TEXTO COMPLETO
+// ============================================================
+async function generateFullBookTextOnly() {
+  const btn = document.getElementById("sbk-generate-text");
+  setButtonLoading(btn, true, "Generando...");
+
+  const totalPages = bookData.pages.filter(p => ["cover","story-cover","story","closing","adult-guide","ngo"].includes(p.type)).length;
+  let done = 0;
+
+  for (const page of bookData.pages) {
+    if (page.type === "index") continue;
+    const needsText = ["cover","story-cover","story","closing","adult-guide","ngo"].includes(page.type);
+    if (!needsText) continue;
+    try {
+      const text = await generateTextFromAPI(page);
+      if (page.type === "cover") {
+        const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+        page.title    = lines[0] || "";
+        page.subtitle = lines[1] || "";
+        page.backText = lines.slice(2).join("\n") || "";
+        page.text     = text;
+        bookData.meta.bookTitle    = page.title;
+        bookData.meta.bookSubtitle = page.subtitle;
+      } else if (page.type === "story-cover") {
+        page.title = text.trim();
+        page.text  = text.trim();
+        const idx = bookData.stories.findIndex(s => s.id === page.storyId);
+        if (idx !== -1) { bookData.stories[idx].title = text.trim(); bookData.settings.storyTitles[idx] = text.trim(); }
+      } else {
+        page.text = text;
+      }
+      done++;
+      setProgress(Math.round((done / totalPages) * 90));
+    } catch(e) {
+      console.error("❌ Error en página:", page.type, e);
+      toast(`Error generando página ${page.type}`, "error");
+    }
+  }
+
+  // Generar índice editorial
+  const indexPage = bookData.pages.find(p => p.type === "index");
+  if (indexPage) {
+    let lines = [];
+    bookData.stories.forEach((story, i) => {
+      const cover = bookData.pages.find(p => p.type === "story-cover" && p.storyId === story.id);
+      if (cover) lines.push(`${i + 1}. ${story.title || `Cuento ${i+1}`} .......... ${cover.order + 1}`);
+    });
+    lines.push("");
+    const closing = bookData.pages.find(p => p.type === "closing");
+    if (closing) lines.push(`Página final emocional .......... ${closing.order + 1}`);
+    const adult = bookData.pages.find(p => p.type === "adult-guide");
+    if (adult) lines.push(`Guía para adultos .......... ${adult.order + 1}`);
+    const ngo = bookData.pages.find(p => p.type === "ngo");
+    if (ngo) lines.push(`Sobre la ONG .......... ${ngo.order + 1}`);
+    indexPage.text = lines.join("\n");
+  }
+
+  setProgress(100);
+  syncSettingsUI();
+  renderStoryTitles();
+  renderPageList();
+  saveProject();
+  setButtonLoading(btn, false);
+  toast("✍️ Textos generados correctamente", "success");
+}
+
+// ============================================================
+//  GENERAR IMÁGENES COMPLETO
+// ============================================================
+async function generateImagesForWholeBook() {
+  if (!confirm("Esto generará TODAS las imágenes del libro. Puede tardar varios minutos. ¿Continuar?")) return;
+  const btn = document.getElementById("sbk-generate-images");
+  setButtonLoading(btn, true, "Generando imágenes...");
+
+  const pagesToProcess = bookData.pages.filter(p => ["cover","story-cover","story","closing"].includes(p.type) && p.text);
+  let done = 0;
+
+  for (const page of pagesToProcess) {
+    if (!page.imagePrompt) page.imagePrompt = buildImagePromptFromPage(page);
+    try {
+      const url = await generateImageFromAPI(page.imagePrompt, false);
+      page.imageUrl = url;
+      done++;
+      setProgress(Math.round((done / pagesToProcess.length) * 100));
+      toast(`🖼️ Imagen ${done}/${pagesToProcess.length} generada`, "info");
+    } catch(e) {
+      console.error("❌ Error imagen:", e);
+    }
+  }
+
+  setProgress(100);
+  saveProject();
+  renderPageList();
+  if (editorState.currentPageId) selectBookPage(editorState.currentPageId);
+  setButtonLoading(btn, false);
+  toast("🎨 Imágenes generadas correctamente", "success");
+}
+
+function buildImagePromptFromPage(page) {
+  const story = page.storyId ? bookData.stories.find(s => s.id === page.storyId) : null;
+  return `Ilustración infantil profesional para libro KDP. Estilo: ${bookData.settings.visualStyle}. Paleta: ${bookData.settings.palette}. Tema: ${story?.theme || "emoción infantil"}. Escena: "${(page.text || "").slice(0, 200)}". Sin texto, formato vertical, fondo limpio.`;
+}
+
+// ============================================================
+//  API CALLS
+// ============================================================
+function getBrainText() {
+  return document.getElementById("sbk-brain-text")?.value?.trim() || "";
+}
+
+async function generateTextFromAPI(page) {
+  const story = page.storyId ? bookData.stories.find(s => s.id === page.storyId) : null;
+  const payload = {
+    page, story,
+    settings: { ...bookData.settings, bookTitle:bookData.meta.bookTitle, bookSubtitle:bookData.meta.bookSubtitle, storyTitles:bookData.settings.storyTitles },
+    brain: getBrainText(),
+    pages: bookData.pages,
+    characters: bookData.characters.global
+  };
+  const res = await fetch(`${API_BASE}/generation/chapter-content`, {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return data.text;
+}
+
+async function generateImageFromAPI(prompt, coloring = false) {
+  const res = await fetch(`${API_BASE}/generation/scene`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ prompt, coloring })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  if (data.imageUrl) return data.imageUrl;
+  if (data.url) return data.url;
+  if (data.b64_json) return `data:image/png;base64,${data.b64_json}`;
+  throw new Error("Respuesta inesperada de imagen");
+}
+
+// ============================================================
+//  REGENERAR TEXTO / IMAGEN DE PÁGINA ACTUAL
+// ============================================================
+async function regenerateTextForCurrentPage() {
+  const page = getCurrentPage();
+  if (!page) return toast("No hay página seleccionada", "error");
+  const btn = document.getElementById("sbk-regen-text");
+  setButtonLoading(btn, true, "Generando...");
+  try {
+    const text = await generateTextFromAPI(page);
+    if (page.type === "cover") {
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      page.title = lines[0] || ""; page.subtitle = lines[1] || ""; page.backText = lines.slice(2).join("\n") || ""; page.text = text;
+    } else {
+      page.text = text;
+    }
+    loadPageIntoEditor(page);
+    saveProject();
+    toast("✍️ Texto regenerado", "success");
+  } catch(e) {
+    toast("Error regenerando texto: " + e.message, "error");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+async function regenerateImageForCurrentPage() {
+  const page = getCurrentPage();
+  if (!page) return toast("No hay página seleccionada", "error");
+  const noImage = ["index","adult-guide","ngo","blank"].includes(page.type);
+  if (noImage) return toast("Esta página no tiene imagen", "error");
+  const prompt = (page.imagePrompt || "").trim();
+  if (!prompt) return toast("Escribe un prompt de imagen primero", "error");
+  const btn = document.getElementById("sbk-regen-image");
+  setButtonLoading(btn, true, "Generando...");
+  try {
+    const url = await generateImageFromAPI(prompt, false);
+    page.imageUrl = url;
+    const imgMock = document.getElementById("sbk-img-mock");
+    if (imgMock) {
+      imgMock.style.backgroundImage = `url("${url}")`;
+      imgMock.style.backgroundSize = "cover";
+      imgMock.style.backgroundPosition = "center";
+      imgMock.textContent = "";
+    }
+    saveProject();
+    toast("🎨 Imagen regenerada", "success");
+  } catch(e) {
+    toast("Error generando imagen: " + e.message, "error");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+// ============================================================
+//  ✅ EXPORTAR PDF INTERIOR
+// ============================================================
+async function exportPdfInterior() {
+  const btn = document.getElementById("sbk-export-pdf-interior");
+  setButtonLoading(btn, true, "Generando PDF...");
+  try {
+    const res = await fetch(`${API_BASE}/export/pdf/interior`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ ...bookData })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `interior-kdp-${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("📄 PDF interior descargado", "success");
+  } catch(e) {
+    toast("Error generando PDF: " + e.message, "error");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+// ============================================================
+//  ✅ EXPORTAR PDF PORTADA
+// ============================================================
+async function exportPdfCover() {
+  const btn = document.getElementById("sbk-export-pdf-cover");
+  setButtonLoading(btn, true, "Generando portada...");
+  try {
+    const res = await fetch(`${API_BASE}/export/pdf/cover`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ ...bookData })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `portada-kdp-${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("🎨 PDF portada descargado", "success");
+  } catch(e) {
+    toast("Error generando portada: " + e.message, "error");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+// ============================================================
+//  EXPORTAR / IMPORTAR JSON
+// ============================================================
+function exportJSON() {
+  const json = JSON.stringify({ version:"2.0", timestamp:Date.now(), bookData, editorState }, null, 2);
+  const blob = new Blob([json], { type:"application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = `storybook-kdp-${Date.now()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast("⬇️ JSON exportado", "success");
+}
+
+function bindImportSystem() {
+  const importBtn = document.getElementById("sbk-import-btn");
+  const fileInput = document.getElementById("sbk-import-input");
+  if (!importBtn || !fileInput) return;
+  importBtn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const parsed = JSON.parse(evt.target.result);
+        if (!parsed.bookData) return toast("Archivo no válido", "error");
+        if (!confirm("Esto reemplazará el proyecto actual. ¿Continuar?")) return;
+        Object.assign(bookData, parsed.bookData);
+        if (parsed.editorState) Object.assign(editorState, parsed.editorState);
+        ensureCharactersData();
+        syncSettingsUI();
+        renderPageList(); renderStoryThemes(); renderCharacters(); renderHistory();
+        if (editorState.currentPageId) selectBookPage(editorState.currentPageId);
+        saveProject();
+        toast("✅ Proyecto importado", "success");
+      } catch(err) { toast("Error leyendo JSON", "error"); }
+    };
+    reader.readAsText(file);
+    fileInput.value = "";
+  });
+}
+
+// ============================================================
+//  HISTÓRICO
+// ============================================================
+function getHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch(e) { return []; } }
+function setHistory(list) { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }
+
+function saveToHistory() {
+  const history = getHistory();
+  const title = bookData.meta.bookTitle?.slice(0, 40) || `Libro ${history.length + 1}`;
+  history.unshift({ id:"hist_"+Date.now(), title, savedAt:Date.now(), data:{ bookData:JSON.parse(JSON.stringify(bookData)), editorState:JSON.parse(JSON.stringify(editorState)) } });
+  setHistory(history);
+  renderHistory();
+  toast("📚 Guardado en histórico", "success");
+}
+
+function loadFromHistory(id) {
+  const entry = getHistory().find(h => h.id === id);
+  if (!entry) return;
+  Object.assign(bookData, entry.data.bookData);
+  Object.assign(editorState, entry.data.editorState);
+  ensureCharactersData();
+  syncSettingsUI();
+  saveProject();
+  renderPageList(); renderStoryThemes(); renderStoryTitles(); renderCharacters();
+  if (editorState.currentPageId) selectBookPage(editorState.currentPageId);
+  toast("📂 Libro cargado desde histórico", "success");
+}
+
+function deleteFromHistory(id) {
+  if (!confirm("¿Eliminar este libro del histórico?")) return;
+  setHistory(getHistory().filter(h => h.id !== id));
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById("sbk-history-list");
+  if (!list) return;
+  const history = getHistory();
+  list.innerHTML = "";
+  if (!history.length) { list.innerHTML = `<div class="sbk__muted sbk__muted--tiny">Aún no hay libros guardados</div>`; return; }
+  history.forEach(entry => {
+    const btn = document.createElement("button");
+    btn.className = "sbk__item";
+    btn.innerHTML = `
+      <div class="sbk__itemLeft">
+        <div class="sbk__itemTitle">${esc(entry.title)}</div>
+        <div class="sbk__itemMeta">${new Date(entry.savedAt).toLocaleString()}</div>
+      </div>
+      <div class="sbk__row">
+        <span class="sbk__tag">LIBRO</span>
+        <button class="sbk__btn sbk__btn--small sbk__btn--ghost">✕</button>
+      </div>`;
+    btn.addEventListener("click", () => loadFromHistory(entry.id));
+    btn.querySelector("button").addEventListener("click", e => { e.stopPropagation(); deleteFromHistory(entry.id); });
+    list.appendChild(btn);
+  });
+}
+
+// ============================================================
+//  CEREBRO IA
+// ============================================================
+function loadDefaultBrainIfEmpty() {
+  const el = document.getElementById("sbk-brain-text");
+  if (el && !el.value.trim()) el.value = DEFAULT_BRAIN_TEXT.trim();
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+document.addEventListener("DOMContentLoaded", function() {
+
+  loadProject();
+  loadDefaultBrainIfEmpty();
+  renderHistory();
+  renderStoryThemes();
+  renderStoryTitles();
+  ensureCharactersData();
+  renderCharacters();
+  bindGlobalInputs();
+  bindEditorPersistence();
+  bindImportSystem();
+  setEditorMode("story");
+
+  // GENERAR TEXTO
+  document.getElementById("sbk-generate-text")?.addEventListener("click", async () => {
+    generateBookStructure();
+    await generateFullBookTextOnly();
+  });
+
+  // GENERAR IMÁGENES
+  document.getElementById("sbk-generate-images")?.addEventListener("click", generateImagesForWholeBook);
+
+  // REGENERAR
+  document.getElementById("sbk-regen-text")?.addEventListener("click",  regenerateTextForCurrentPage);
+  document.getElementById("sbk-regen-image")?.addEventListener("click", regenerateImageForCurrentPage);
+
+  // ✅ PDF BUTTONS — CONECTADOS
+  document.getElementById("sbk-export-pdf-interior")?.addEventListener("click", exportPdfInterior);
+  document.getElementById("sbk-export-pdf-cover")?.addEventListener("click",    exportPdfCover);
+
+  // JSON
+  document.getElementById("sbk-export-json")?.addEventListener("click", exportJSON);
+
+  // GUARDAR
+  document.getElementById("sbk-save-btn")?.addEventListener("click",  () => { saveProject(); toast("💾 Guardado", "success"); });
+  document.getElementById("sbk-save-page")?.addEventListener("click", () => { saveProject(); toast("💾 Página guardada", "success"); });
+
+  // RESET
+  document.getElementById("sbk-reset-book")?.addEventListener("click", resetProject);
+
+  // HISTÓRICO
+  document.getElementById("sbk-save-to-history")?.addEventListener("click", saveToHistory);
+
+  // CEREBRO
+  document.getElementById("sbk-save-brain")?.addEventListener("click",    () => { saveProject(); toast("🧠 Cerebro guardado", "success"); });
+  document.getElementById("sbk-restore-brain")?.addEventListener("click", () => { const el = document.getElementById("sbk-brain-text"); if(el) { el.value = DEFAULT_BRAIN_TEXT.trim(); saveProject(); toast("↩️ Cerebro restaurado", "success"); } });
+
+  // PERSONAJES
+  const charMode  = document.getElementById("sbk-character-mode");
+  const charCount = document.getElementById("sbk-character-count");
+
+  if (charMode) {
+    charMode.value = bookData.characters.mode || "global";
+    charMode.addEventListener("change", () => { bookData.characters.mode = charMode.value; renderCharacters(); saveProject(); });
+  }
+
+  if (charCount) {
+    if (bookData.characters.global.length > 0) charCount.value = bookData.characters.global.length;
+    const updateChars = () => {
+      ensureCharactersData();
+      const count = Math.max(0, Number(charCount.value) || 0);
+      while (bookData.characters.global.length < count) bookData.characters.global.push({ id:uid(), name:"", description:"", imageUrl:"" });
+      while (bookData.characters.global.length > count) bookData.characters.global.pop();
+      renderCharacters(); saveProject();
+    };
+    charCount.addEventListener("input",  updateChars);
+    charCount.addEventListener("change", updateChars);
+    updateChars();
+  }
+
+  console.log("✅ Storybook KDP Editor v2.0 — Genspark AI — Listo");
+  console.log("📡 API:", API_BASE);
+});
+</script>
+</body>
+</html>
