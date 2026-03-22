@@ -262,9 +262,9 @@ async function addStoryPage(doc, page, settings) {
     doc.save();
     doc.roundedRect(MARGIN, MARGIN, W - MARGIN * 2, imgH - MARGIN, 10).clip();
     doc.image(imgBuf, MARGIN, MARGIN, {
-      width: W - MARGIN * 2,
-      height: imgH - MARGIN,
-      cover: [W - MARGIN * 2, imgH - MARGIN]
+      fit: [W - MARGIN * 2, imgH - MARGIN],
+      align: "center",
+      valign: "center"
     });
     doc.restore();
   } else {
