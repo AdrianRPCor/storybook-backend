@@ -485,8 +485,8 @@ export async function generateCoverPdf(bookData) {
 
   // CONTRAPORTADA
   if (imgBuf) {
-    doc.image(imgBuf, backX, BLEED, {
-      cover: [TRIM_W, TRIM_H]
+    doc.image(backImgBuf, backX, BLEED, {
+      cover: [TRIM_W, TRIM_H],
       align: "center",
       valign: "bottom"
     });
