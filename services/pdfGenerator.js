@@ -518,8 +518,9 @@ export async function generateCoverPdf(bookData) {
   // CONTRAPORTADA
   if (imgBuf) {
     doc.image(imgBuf, backX, BLEED, {
-      width: TRIM_W,
-      height: TRIM_H
+      fit: [TRIM_W, TRIM_H],
+      align: "center",
+      valign: "center"
     });
 
     // capa oscura arriba para texto
@@ -534,8 +535,9 @@ export async function generateCoverPdf(bookData) {
     .font("Helvetica")
     .fontSize(10)
     .fillColor("#ffffff")
-    .text(backText, backX + 20, BLEED + 60, {
-      width: TRIM_W - 40
+    .texttext(backText, backX + 30, BLEED + 40, {
+      width: TRIM_W - 60,
+      lineGap: 4
     });
 
   // LOMO (sin texto porque es muy fino)
