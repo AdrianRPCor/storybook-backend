@@ -487,10 +487,6 @@ export async function generateCoverPdf(bookData) {
       valign: "center"
     });
 
-    // capa oscura arriba para texto
-    doc.rect(backX, BLEED, TRIM_W, TRIM_H * 0.4)
-       .fill("rgba(0,0,0,0.4)");
-
   } else {
     doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
@@ -505,7 +501,7 @@ export async function generateCoverPdf(bookData) {
     });
 
   // LOMO (sin texto porque es muy fino)
-  const spineColor = bookData?.settings?.blankPageColor || "#1e3a5f";
+  const spineColor = bookData?.settings?.spineColor || "#1e3a5f";
 
   doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill(spineColor);
 
@@ -517,34 +513,10 @@ export async function generateCoverPdf(bookData) {
       valign: "center"
     });
 
-    // overlay para mejorar legibilidad
-    doc.rect(frontX, BLEED + TRIM_H * 0.55, TRIM_W, TRIM_H * 0.45)
-       .fill("rgba(0,0,0,0.35)");
-
   } else {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
 
-  // Título
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(28)
-    .fillColor("#ffffff")
-    .text(title, frontX + 20, BLEED + TRIM_H * 0.6, {
-      width: TRIM_W - 40,
-      align: "center"
-    });
-
-  // Subtítulo
-  if (subtitle) {
-    doc
-      .font("Helvetica")
-      .fontSize(14)
-      .fillColor("#ffffff")
-      .text(subtitle, frontX + 20, BLEED + TRIM_H * 0.6 + 50, {
-        width: TRIM_W - 40,
-        align: "center"
-      });
   }
 
   doc.end();
