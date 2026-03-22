@@ -482,9 +482,7 @@ export async function generateCoverPdf(bookData) {
   // CONTRAPORTADA
   if (imgBuf) {
     doc.image(imgBuf, backX, BLEED, {
-      fit: [TRIM_W, TRIM_H],
-      align: "center",
-      valign: "center"
+      cover: [TRIM_W, TRIM_H]
     });
 
   } else {
