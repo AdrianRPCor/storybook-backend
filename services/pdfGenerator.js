@@ -555,7 +555,7 @@ export async function generateCoverPdf(bookData) {
 
     // overlay para mejorar legibilidad
     doc.rect(frontX, BLEED + TRIM_H * 0.55, TRIM_W, TRIM_H * 0.45)
-       .fill("rgba(0,0,0,0.25)");
+       .fill("rgba(0,0,0,0.35)");
 
   } else {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
