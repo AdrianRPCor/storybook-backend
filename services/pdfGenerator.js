@@ -475,20 +475,28 @@ export async function generatePdf(bookData) {
 //  FUNCIÓN: generateCoverPdf (solo portada, ratio extendido)
 // ============================================================
 export async function generateCoverPdf(bookData) {
-  // Portada KDP tapa dura: ancho = contraportada + lomo + portada
-  // Para 6×9 ~200 pág: lomo ≈ 0.5" → total ≈ 12.5×9.25"
-  const CW = 900;  // 12.5" × 72
-  const CH = 666;  // 9.25" × 72
+
+  const PAGE_COUNT = 68;
+  const PAPER_FACTOR = 0.002252;
+
+  const BLEED = 0.125 * 72;
+  const TRIM_W = 6 * 72;
+  const TRIM_H = 9 * 72;
+
+  const spineWidth = PAGE_COUNT * PAPER_FACTOR * 72;
+
+  const coverWidth = (TRIM_W * 2) + spineWidth + (BLEED * 2);
+  const coverHeight = TRIM_H + (BLEED * 2);
 
   const doc = new PDFDocument({
-    size: [CW, CH],
-    autoFirstPage: false,
-    info: { Title: bookData?.meta?.bookTitle || "Portada KDP" }
+    size: [coverWidth, coverHeight],
+    autoFirstPage: false
   });
 
   const buffers = [];
   doc.on("data", chunk => buffers.push(chunk));
-  doc.addPage({ size: [CW, CH] });
+
+  doc.addPage({ size: [coverWidth, coverHeight] });
 
   const coverPage = (bookData?.pages || []).find(p => p.type === "cover");
 
@@ -496,101 +504,63 @@ export async function generateCoverPdf(bookData) {
     ? await fetchImageBuffer(coverPage.imageUrl)
     : null;
 
-  const title = bookData?.meta?.bookTitle || "Mi libro de cuentos";
+  const title = bookData?.meta?.bookTitle || "Título";
   const subtitle = bookData?.meta?.bookSubtitle || "";
-  const spineText = bookData?.meta?.spineText || title;
+  const backText = bookData?.meta?.backCoverText || "";
 
-  const backText =
-    bookData?.meta?.backCoverText ||
-    coverPage?.backText ||
-    "";
-  
-  const spineColor =
-    bookData?.settings?.blankPageColor || "#dbeafe";
+  const backX = BLEED;
+  const spineX = BLEED + TRIM_W;
+  const frontX = BLEED + TRIM_W + spineWidth;
 
   // Fondo general
-  doc.rect(0, 0, CW, CH).fill(COLOR_COVER_BG);
+  doc.rect(0, 0, coverWidth, coverHeight).fill("#ffffff");
 
-  // ---- PORTADA (lado derecho) ----
-  const portadaX = CW / 2 + 18;
-  const portadaW = CW / 2 - 18;
+  // CONTRAPORTADA
+  doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
 
+  doc
+    .font("Helvetica")
+    .fontSize(10)
+    .fillColor("#ffffff")
+    .text(backText, backX + 20, BLEED + 60, {
+      width: TRIM_W - 40
+    });
+
+  // LOMO (sin texto porque es muy fino)
+  doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill("#0f172a");
+
+  // PORTADA
   if (imgBuf) {
-    doc.image(imgBuf, portadaX, 0, { width: portadaW, height: CH, cover: [portadaW, CH] });
-    doc.rect(portadaX, CH * 0.55, portadaW, CH * 0.45).fill("rgba(0,0,0,0.40)");
+    doc.image(imgBuf, frontX, BLEED, {
+      width: TRIM_W,
+      height: TRIM_H,
+      cover: [TRIM_W, TRIM_H]
+    });
+  } else {
+    doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
 
+  // Título
   doc
     .font("Helvetica-Bold")
     .fontSize(28)
     .fillColor("#ffffff")
-    .text(title, portadaX + 20, CH * 0.62, {
-      width: portadaW - 40,
+    .text(title, frontX + 20, BLEED + TRIM_H * 0.6, {
+      width: TRIM_W - 40,
       align: "center"
     });
 
+  // Subtítulo
   if (subtitle) {
     doc
       .font("Helvetica")
-      .fontSize(13)
-      .fillColor("rgba(255,255,255,0.85)")
-      .text(subtitle, portadaX + 20, CH * 0.62 + 55, {
-        width: portadaW - 40,
+      .fontSize(14)
+      .fillColor("#ffffff")
+      .text(subtitle, frontX + 20, BLEED + TRIM_H * 0.6 + 50, {
+        width: TRIM_W - 40,
         align: "center"
       });
   }
-
-  // ---- LOMO (centro) ----
-  const lomoX = CW / 2 - 18;
-  const lomoW = 36;
-  doc.rect(lomoX, 0, lomoW, CH).fill(spineColor);
-
-  // Texto del lomo (vertical)
-  doc.save();
-  doc.translate(lomoX + lomoW / 2 + 5, CH / 2);
-  doc.rotate(-90);
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(10)
-    .fillColor("#ffffff")
-    .text(spineText, -100, -5, { width: 200, align: "center" });
-  doc.restore();
-
-  // ---- CONTRAPORTADA (lado izquierdo) ----
-  const contraX = 0;
-  const contraW = CW / 2 - 18;
-
-  doc.rect(contraX, 0, contraW, CH).fill("#132640");
-
-  if (backText) {
-    // Comilla decorativa
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(48)
-      .fillColor("rgba(255,255,255,0.12)")
-      .text('"', contraX + 30, CH * 0.12);
-
-    doc
-      .font("Helvetica")
-      .fontSize(12)
-      .fillColor("rgba(255,255,255,0.88)")
-      .text(backText, contraX + 40, CH * 0.15, {
-        width: contraW - 100,
-        align: "left",
-        lineGap: 5
-      });
-  }
-
-  // Pie de contraportada
-  doc.rect(contraX, CH - 40, contraW, 40).fill("rgba(0,0,0,0.3)");
-  doc
-    .font("Helvetica")
-    .fontSize(9)
-    .fillColor("rgba(255,255,255,0.6)")
-    .text("Cuentos Infantiles · KDP Edition", contraX, CH - 25, {
-      width: contraW,
-      align: "center"
-    });
 
   doc.end();
 
