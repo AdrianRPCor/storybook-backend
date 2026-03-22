@@ -490,11 +490,23 @@ export async function generateCoverPdf(bookData) {
   doc.on("data", chunk => buffers.push(chunk));
   doc.addPage({ size: [CW, CH] });
 
-  const coverPage  = (bookData?.pages || []).find(p => p.type === "cover");
-  const imgBuf     = coverPage?.imageUrl ? await fetchImageBuffer(coverPage.imageUrl) : null;
-  const title      = bookData?.meta?.bookTitle    || "Mi libro de cuentos";
-  const subtitle   = bookData?.meta?.bookSubtitle || "";
-  const backText   = coverPage?.backText || bookData?.meta?.backCoverText || "";
+  const coverPage = (bookData?.pages || []).find(p => p.type === "cover");
+
+  const imgBuf = coverPage?.imageUrl
+    ? await fetchImageBuffer(coverPage.imageUrl)
+    : null;
+
+  const title = bookData?.meta?.bookTitle || "Mi libro de cuentos";
+  const subtitle = bookData?.meta?.bookSubtitle || "";
+  const spineText = bookData?.meta?.spineText || title;
+
+  const backText =
+    bookData?.meta?.backCoverText ||
+    coverPage?.backText ||
+    "";
+  
+  const spineColor =
+    bookData?.settings?.blankPageColor || "#dbeafe";
 
   // Fondo general
   doc.rect(0, 0, CW, CH).fill(COLOR_COVER_BG);
@@ -531,7 +543,7 @@ export async function generateCoverPdf(bookData) {
   // ---- LOMO (centro) ----
   const lomoX = CW / 2 - 18;
   const lomoW = 36;
-  doc.rect(lomoX, 0, lomoW, CH).fill("rgba(0,0,0,0.4)");
+  doc.rect(lomoX, 0, lomoW, CH).fill(spineColor);
 
   // Texto del lomo (vertical)
   doc.save();
@@ -541,7 +553,7 @@ export async function generateCoverPdf(bookData) {
     .font("Helvetica-Bold")
     .fontSize(10)
     .fillColor("#ffffff")
-    .text(title, -100, -5, { width: 200, align: "center" });
+    .text(spineText, -100, -5, { width: 200, align: "center" });
   doc.restore();
 
   // ---- CONTRAPORTADA (lado izquierdo) ----
@@ -562,8 +574,8 @@ export async function generateCoverPdf(bookData) {
       .font("Helvetica")
       .fontSize(12)
       .fillColor("rgba(255,255,255,0.88)")
-      .text(backText, contraX + 40, CH * 0.2, {
-        width: contraW - 80,
+      .text(backText, contraX + 40, CH * 0.15, {
+        width: contraW - 100,
         align: "left",
         lineGap: 5
       });
