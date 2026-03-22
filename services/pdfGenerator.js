@@ -512,8 +512,8 @@ export async function generateCoverPdf(bookData) {
     doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
 
-  doc.rect(backX + 18, BLEED + 18, TRIM_W - 36, 120)
-     .fill("rgba(0,0,0,0.28)");
+  doc.roundedRect(backX + 24, BLEED + 24, TRIM_W - 48, 160, 10)
+     .fill("rgba(0,0,0,0.45)");
 
   doc
     .font("Helvetica")
@@ -529,6 +529,23 @@ export async function generateCoverPdf(bookData) {
 
   doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill(spineColor);
 
+  // Texto del lomo (vertical)
+  doc.save();
+
+  doc.translate(spineX + spineWidth / 2, BLEED + TRIM_H / 2);
+  doc.rotate(-90);
+
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(10)
+    .fillColor("#ffffff")
+    .text(title, -TRIM_H / 2 + 20, -5, {
+      width: TRIM_H - 40,
+      align: "center"
+    });
+
+  doc.restore();
+  
   // PORTADA
   if (imgBuf) {
     doc.image(imgBuf, frontX, BLEED, {
