@@ -5,6 +5,10 @@ export function buildPrompt({
   styleHints
 }) {
 
+  // =========================
+  // 🔒 DESESTRUCTURACIÓN SEGURA
+  // =========================
+
   const {
     pageType,
     pageNumber,
@@ -19,13 +23,21 @@ export function buildPrompt({
     previousPageText,
     nextPageGoal,
     ageTarget
-  } = context;
+  } = context || {};
 
-  const chars = characters.length
+  // =========================
+  // 🧑‍🤝‍🧑 PERSONAJES
+  // =========================
+
+  const chars = Array.isArray(characters) && characters.length
     ? characters.map(c =>
-        `- ${c.name || "Personaje"}: ${c.description || ""}`
+        `- ${c?.name || "Personaje"}: ${c?.description || ""}`
       ).join("\n")
     : "- Usa solo los personajes necesarios y mantenlos coherentes.";
+
+  // =========================
+  // 🧠 INSTRUCCIONES POR TIPO
+  // =========================
 
   const instructionByType = {
 
@@ -35,19 +47,21 @@ Escribe:
 2) SUBTÍTULO (máximo 12 palabras)
 3) Texto breve de contraportada (máximo 80 palabras)
 
-Debe reflejar las temáticas del libro.
+Debe reflejar las temáticas del libro y ser emocional.
 `.trim(),
 
     "story-cover": `
-Escribe SOLO el título del cuento "${storyTitle}".
+Escribe SOLO el título del cuento "${storyTitle || "Cuento"}".
 Máximo 8 palabras.
-Debe reflejar la enseñanza: ${lesson}.
+Debe reflejar la enseñanza: ${lesson || "emocional"}.
 `.trim(),
 
     index: `
 Escribe un índice estructurado usando EXACTAMENTE estos títulos:
 
-${storyTitles.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+${Array.isArray(storyTitles) && storyTitles.length
+  ? storyTitles.map((t, i) => `${i + 1}. ${t}`).join("\n")
+  : "1. Cuento 1\n2. Cuento 2"}
 
 Después añade:
 - Página final emocional
@@ -58,13 +72,13 @@ No inventes títulos nuevos.
 `.trim(),
 
     story: `
-Continúa el cuento "${storyTitle}".
+Continúa el cuento "${storyTitle || "Historia"}".
 
 Reglas:
 - No reinicies la historia.
 - No repitas información.
 - Avanza la narrativa.
-- Objetivo de esta página: ${nextPageGoal}
+- Objetivo de esta página: ${nextPageGoal || "Desarrollo narrativo"}
 
 Texto anterior:
 "${previousPageText || ""}"
@@ -81,36 +95,50 @@ Escribe una guía clara para adultos:
 - Qué emociones trabaja el libro
 - Por qué son importantes
 - 3 consejos prácticos
+
 Tono profesional y cercano.
 `.trim(),
 
     ngo: `
 Escribe una página informativa breve sobre una ONG que apoya el bienestar infantil.
+
 Tono inspirador, no comercial.
 `.trim()
   };
 
+  // =========================
+  // 🧱 INSTRUCCIÓN FINAL SEGURA
+  // =========================
+
+  const instruction =
+    instructionByType[pageType] ||
+    instructionByType["story"];
+
+  // =========================
+  // 🧾 PROMPT FINAL
+  // =========================
+
   return `
-${brain}
+${brain || ""}
 
 CONTEXTO GLOBAL:
-Edad objetivo: ${ageTarget}
+Edad objetivo: ${ageTarget || "infantil"}
 Libro: ${bookTitle || ""}
 Subtítulo: ${bookSubtitle || ""}
 
 Personajes globales:
 ${chars}
 
-TIPO DE PÁGINA: ${pageType}
+TIPO DE PÁGINA: ${pageType || "story"}
 
 INSTRUCCIÓN:
-${instructionByType[pageType] || instructionByType.story}
+${instruction}
 
 ESTILO:
-${styleHints}
+${styleHints || ""}
 
 REGLAS:
-- Máximo ${maxWords} palabras.
+- Máximo ${maxWords || 120} palabras.
 - Devuelve SOLO el texto final.
 - Sin explicaciones.
 `.trim();
