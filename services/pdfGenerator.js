@@ -516,7 +516,19 @@ export async function generateCoverPdf(bookData) {
   doc.rect(0, 0, coverWidth, coverHeight).fill("#ffffff");
 
   // CONTRAPORTADA
-  doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
+  if (imgBuf) {
+    doc.image(imgBuf, backX, BLEED, {
+      width: TRIM_W,
+      height: TRIM_H
+    });
+
+    // capa oscura arriba para texto
+    doc.rect(backX, BLEED, TRIM_W, TRIM_H * 0.4)
+       .fill("rgba(0,0,0,0.4)");
+
+  } else {
+    doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
+  }
 
   doc
     .font("Helvetica")
@@ -527,7 +539,9 @@ export async function generateCoverPdf(bookData) {
     });
 
   // LOMO (sin texto porque es muy fino)
-  doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill("#0f172a");
+  const spineColor = bookData?.settings?.blankPageColor || "#1e3a5f";
+
+  doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill(spineColor);
 
   // PORTADA
   if (imgBuf) {
