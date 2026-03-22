@@ -1,47 +1,35 @@
+import express from "express";
+import { generatePageText } from "../services/editorialOrchestrator.js";
 
-import OpenAI from "openai";
+const router = express.Router();
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+router.post("/", async (req, res) => {
+  try {
+
+    const { page, story, settings, brain, pages, characters } = req.body;
+
+    if (!page || !settings || !pages) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        received: Object.keys(req.body || {})
+      });
+    }
+
+    const result = await generatePageText({
+      page,
+      story,
+      settings,
+      brain,
+      pages,
+      characters
+    });
+
+    res.json(result);
+
+  } catch (err) {
+    console.error("❌ Error generando texto:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-export async function generateText(prompt) {
-
-  if (!prompt || typeof prompt !== "string") {
-    throw new Error("Prompt inválido en generateText");
-  }
-
-  const models = ["gpt-4o-mini"];
-
-  for (const model of models) {
-    try {
-      console.log(`🧠 Generando texto con modelo: ${model}`);
-
-      const response = await client.chat.completions.create({
-        model,
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        max_tokens: 1024,
-        temperature: 0.8,
-      });
-
-      const text = response?.choices?.[0]?.message?.content;
-
-      if (!text) {
-        throw new Error("Respuesta vacía del modelo");
-      }
-
-      return text.trim();
-
-    } catch (error) {
-      console.warn(`⚠️ Error con modelo ${model}:`, error.message);
-      continue;
-    }
-  }
-
-  throw new Error("❌ No se pudo generar texto con ningún modelo");
-}
+export default router;
