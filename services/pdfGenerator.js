@@ -531,9 +531,11 @@ export async function generateCoverPdf(bookData) {
 
   // PORTADA
   if (imgBuf) {
-    doc.image(imgBuf, frontX - BLEED, 0, {
-      width: TRIM_W + (BLEED * 2),
-      height: TRIM_H + (BLEED * 2)
+    doc.image(imgBuf, frontX, BLEED, {
+      width: TRIM_W,
+      height: TRIM_H,
+      align: "center",
+      valign: "center"
     });
   } else {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
