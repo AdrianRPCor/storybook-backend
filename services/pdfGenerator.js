@@ -382,14 +382,6 @@ function addPageNumber(doc, pageNum) {
   // 📐 CÁLCULO PORTADA COMPLETA
   // ============================
 
-  const PAGE_WIDTH = W;
-  const PAGE_HEIGHT = H;
-
-  // ⚠️ luego lo afinamos según páginas reales
-  const SPINE_WIDTH = 28; // ≈ 0.4" → placeholder
-
-  const TOTAL_WIDTH = PAGE_WIDTH * 2 + SPINE_WIDTH;
-
   // 👉 DOCUMENTO HORIZONTAL REAL
   const doc = new PDFDocument({
     size: [W, H], // 🔥 IMPORTANTE → interior vuelve a 6x9
