@@ -535,7 +535,7 @@ export async function generateCoverPdf(bookData) {
     .font("Helvetica")
     .fontSize(10)
     .fillColor("#ffffff")
-    .text(backText, backX + 30, BLEED + 40, {
+    .text(backText, backX + 30, BLEED + 60, {
       width: TRIM_W - 60,
       lineGap: 4
     });
