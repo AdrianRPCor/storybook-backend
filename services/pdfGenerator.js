@@ -456,7 +456,6 @@ export async function generatePdf(bookData) {
 //  FUNCIÓN: generateCoverPdf (solo portada, ratio extendido)
 // ============================================================
 export async function generateCoverPdf(bookData) {
-
   const PAGE_COUNT = 68;
   const PAPER_FACTOR = 0.002252;
 
@@ -489,9 +488,10 @@ export async function generateCoverPdf(bookData) {
     ? await fetchImageBuffer(coverPage.backImageUrl)
     : imgBuf;
 
-  const title = bookData?.meta?.bookTitle || "Título";
-  const subtitle = bookData?.meta?.bookSubtitle || "";
-  const backText = bookData?.meta?.backCoverText || "";
+  const title = (bookData?.meta?.bookTitle || "Título").trim();
+  const subtitle = (bookData?.meta?.bookSubtitle || "").trim();
+  const backText = (bookData?.meta?.backCoverText || "").trim();
+  const spineText = (bookData?.meta?.spineText || title).trim();
 
   const backX = BLEED;
   const spineX = BLEED + TRIM_W;
@@ -500,53 +500,68 @@ export async function generateCoverPdf(bookData) {
   // Fondo general
   doc.rect(0, 0, coverWidth, coverHeight).fill("#ffffff");
 
+  // ============================================================
   // CONTRAPORTADA
+  // ============================================================
   if (backImgBuf) {
     doc.image(backImgBuf, backX, BLEED, {
       cover: [TRIM_W, TRIM_H],
       align: "center",
       valign: "bottom"
     });
-
   } else {
     doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
 
-  doc.roundedRect(backX + 24, BLEED + 24, TRIM_W - 48, 160, 10)
-     .fill("rgba(0,0,0,0.45)");
-
+  // Caja semitransparente para el texto de contraportada
   doc
-    .font("Helvetica")
-    .fontSize(10)
+    .roundedRect(backX + 24, BLEED + 24, TRIM_W - 48, 160, 10)
+    .fill("rgba(0,0,0,0.45)");
+
+  // Texto contraportada
+  doc
+    .font("Helvetica-Oblique")
+    .fontSize(11)
     .fillColor("#ffffff")
-    .text(backText, backX + 30, BLEED + 60, {
-      width: TRIM_W - 60,
+    .text(backText, backX + 36, BLEED + 56, {
+      width: TRIM_W - 72,
+      align: "center",
       lineGap: 4
     });
 
-  // LOMO (sin texto porque es muy fino)
+  // ============================================================
+  // LOMO
+  // ============================================================
   const spineColor = bookData?.settings?.spineColor || "#1e3a5f";
 
   doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill(spineColor);
 
-  // Texto del lomo (vertical)
-  doc.save();
+  // Solo poner texto si el lomo no es ridículamente fino
+  if (spineWidth > 18 && spineText) {
+    let spineFontSize = 10;
 
-  doc.translate(spineX + spineWidth / 2, BLEED + TRIM_H / 2);
-  doc.rotate(-90);
+    if (spineWidth < 26) spineFontSize = 8;
+    if (spineWidth < 22) spineFontSize = 7;
 
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(10)
-    .fillColor("#ffffff")
-    .text(title, -TRIM_H / 2 + 20, -5, {
-      width: TRIM_H - 40,
-      align: "center"
-    });
+    doc.save();
+    doc.translate(spineX + spineWidth / 2, BLEED + TRIM_H / 2);
+    doc.rotate(-90);
 
-  doc.restore();
-  
-  // PORTADA
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(spineFontSize)
+      .fillColor("#ffffff")
+      .text(spineText, -TRIM_H / 2 + 20, -spineFontSize / 2, {
+        width: TRIM_H - 40,
+        align: "center"
+      });
+
+    doc.restore();
+  }
+
+  // ============================================================
+  // PORTADA FRONTAL
+  // ============================================================
   if (imgBuf) {
     doc.image(imgBuf, frontX, BLEED, {
       cover: [TRIM_W, TRIM_H],
@@ -554,8 +569,36 @@ export async function generateCoverPdf(bookData) {
       valign: "center"
     });
 
+    // Overlay inferior para legibilidad del texto editable
+    doc
+      .rect(frontX, BLEED + TRIM_H * 0.55, TRIM_W, TRIM_H * 0.45)
+      .fill("rgba(0,0,0,0.45)");
   } else {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
+  }
+
+  // Título portada
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(28)
+    .fillColor("#ffffff")
+    .text(title, frontX + 20, BLEED + TRIM_H * 0.62, {
+      width: TRIM_W - 40,
+      align: "center",
+      lineGap: 4
+    });
+
+  // Subtítulo portada
+  if (subtitle) {
+    doc
+      .font("Helvetica")
+      .fontSize(14)
+      .fillColor("#e5e7eb")
+      .text(subtitle, frontX + 24, BLEED + TRIM_H * 0.76, {
+        width: TRIM_W - 48,
+        align: "center",
+        lineGap: 3
+      });
   }
 
   doc.end();
