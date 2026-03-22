@@ -483,6 +483,8 @@ export async function generateCoverPdf(bookData) {
   if (imgBuf) {
     doc.image(imgBuf, backX, BLEED, {
       cover: [TRIM_W, TRIM_H]
+      align: "center",
+      valign: "bottom"
     });
 
   } else {
