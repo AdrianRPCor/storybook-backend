@@ -95,7 +95,7 @@ async function addIndexPage(doc, page) {
     });
 
     // degradado suave arriba de la imagen
-    doc.rect(0, H - imgHeight - 40, W, 40)
+    doc.rect(0, H - imgHeight - 60, W, 60)
        .fill("#ffffff");
   }
   
