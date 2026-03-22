@@ -72,42 +72,6 @@ async function addCoverPage(doc, page, settings) {
     doc.circle(W * 0.75, H * 0.25, 90).fill("rgba(255,255,255,0.07)");
     doc.circle(W * 0.15, H * 0.7,  60).fill("rgba(255,255,255,0.05)");
   }
-
-  // Título
-  const title = page.title || settings?.bookTitle || "Mi libro de cuentos";
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(32)
-    .fillColor("#ffffff")
-    .text(title, MARGIN, H * 0.62, {
-      width: W - MARGIN * 2,
-      align: "center",
-      lineGap: 4
-    });
-
-  // Subtítulo
-  const subtitle = page.subtitle || settings?.bookSubtitle || "";
-  if (subtitle) {
-    doc
-      .font("Helvetica")
-      .fontSize(14)
-      .fillColor("rgba(255,255,255,0.88)")
-      .text(subtitle, MARGIN, H * 0.62 + 60, {
-        width: W - MARGIN * 2,
-        align: "center"
-      });
-  }
-
-  // Banda inferior con colección
-  doc.rect(0, H - 42, W, 42).fill("rgba(0,0,0,0.55)");
-  doc
-    .font("Helvetica")
-    .fontSize(10)
-    .fillColor("rgba(255,255,255,0.7)")
-    .text("Cuentos Infantiles · KDP", 0, H - 28, {
-      width: W,
-      align: "center"
-    });
 }
 
 // ============================================================
