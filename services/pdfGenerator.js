@@ -90,8 +90,7 @@ async function addIndexPage(doc, page) {
     const imgHeight = H * 0.35;
 
     doc.image(imgBuf, 0, H - imgHeight, {
-      width: W,
-      height: imgHeight
+      cover: [W, imgHeight]
     });
 
     // degradado suave arriba de la imagen
@@ -125,7 +124,7 @@ async function addIndexPage(doc, page) {
     .filter(l => l.trim() !== "");
 
   lines.forEach(line => {
-    if (y > H - MARGIN - 20) return;
+    if (y > H * 0.6) return;
 
     // Detectar número de página al final
     const match = line.match(/^(.*?)\.{2,}\s*(\d+)\s*$/);
