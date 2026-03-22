@@ -48,6 +48,22 @@ function addBlankPage(doc, color = "#ffffff") {
   doc.addPage({ size: [W, H] });
   doc.rect(0, 0, W, H).fill(color);
 }
+  const imgBuf = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
+
+  // Imagen estilo contraportada (personajes abajo)
+  if (imgBuf) {
+    const imgHeight = H * 0.35;
+
+    doc.image(imgBuf, 0, H - imgHeight, {
+      width: W,
+      height: imgHeight,
+      cover: [W, imgHeight]
+    });
+
+    // degradado arriba de la imagen
+    doc.rect(0, H - imgHeight - 40, W, 40)
+       .fill("rgba(255,255,255,0.85)");
+  }
 
 // ============================================================
 //  PORTADA COMPLETA KDP (portada + lomo + contraportada)
