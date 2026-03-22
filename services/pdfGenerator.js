@@ -48,22 +48,6 @@ function addBlankPage(doc, color = "#ffffff") {
   doc.addPage({ size: [W, H] });
   doc.rect(0, 0, W, H).fill(color);
 }
-  const imgBuf = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
-
-  // Imagen estilo contraportada (personajes abajo)
-  if (imgBuf) {
-    const imgHeight = H * 0.35;
-
-    doc.image(imgBuf, 0, H - imgHeight, {
-      width: W,
-      height: imgHeight,
-      cover: [W, imgHeight]
-    });
-
-    // degradado arriba de la imagen
-    doc.rect(0, H - imgHeight - 40, W, 40)
-       .fill("rgba(255,255,255,0.85)");
-  }
 
 // ============================================================
 //  PORTADA COMPLETA KDP (portada + lomo + contraportada)
@@ -93,10 +77,28 @@ async function addCoverPage(doc, page, settings) {
 // ============================================================
 //  ÍNDICE EDITORIAL
 // ============================================================
-function addIndexPage(doc, page) {
+async function addIndexPage(doc, page) {
   doc.addPage({ size: [W, H] });
   doc.rect(0, 0, W, H).fill("#ffffff");
 
+  const imgBuf = page.imageUrl
+    ? await fetchImageBuffer(page.imageUrl)
+    : null;
+
+  // Imagen estilo contraportada (personajes abajo)
+  if (imgBuf) {
+    const imgHeight = H * 0.35;
+
+    doc.image(imgBuf, 0, H - imgHeight, {
+      width: W,
+      height: imgHeight
+    });
+
+    // degradado suave arriba de la imagen
+    doc.rect(0, H - imgHeight - 40, W, 40)
+       .fill("#ffffff");
+  }
+  
   const paddingX = MARGIN + 10;
   const contentW = W - paddingX * 2;
 
@@ -414,7 +416,7 @@ export async function generatePdf(bookData) {
       });
 
     } else if (page.type === "index") {
-      addIndexPage(doc, page);
+      await addIndexPage(doc, page);
       addPageNumber(doc, globalPageNum);
 
     } else if (page.type === "story-cover") {
@@ -500,7 +502,7 @@ export async function generateCoverPdf(bookData) {
   doc.rect(0, 0, coverWidth, coverHeight).fill("#ffffff");
 
   // CONTRAPORTADA
-  if (imgBuf) {
+  if (backImgBuf) {
     doc.image(backImgBuf, backX, BLEED, {
       cover: [TRIM_W, TRIM_H],
       align: "center",
