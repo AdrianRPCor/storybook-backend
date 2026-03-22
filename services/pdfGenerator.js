@@ -468,6 +468,10 @@ export async function generateCoverPdf(bookData) {
     ? await fetchImageBuffer(coverPage.imageUrl)
     : null;
 
+  const backImgBuf = coverPage?.backImageUrl
+    ? await fetchImageBuffer(coverPage.backImageUrl)
+    : imgBuf;
+
   const title = bookData?.meta?.bookTitle || "Título";
   const subtitle = bookData?.meta?.bookSubtitle || "";
   const backText = bookData?.meta?.backCoverText || "";
@@ -490,6 +494,9 @@ export async function generateCoverPdf(bookData) {
   } else {
     doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
+
+  doc.rect(backX + 18, BLEED + 18, TRIM_W - 36, 120)
+     .fill("rgba(0,0,0,0.28)");
 
   doc
     .font("Helvetica")
