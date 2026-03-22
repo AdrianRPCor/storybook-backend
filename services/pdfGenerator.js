@@ -517,8 +517,6 @@ export async function generateCoverPdf(bookData) {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
 
-  }
-
   doc.end();
 
   return new Promise((resolve, reject) => {
