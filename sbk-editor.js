@@ -129,7 +129,12 @@ function syncSettingsUI() {
   set("sbk-book-title",      bookData.meta.bookTitle);
   set("sbk-book-subtitle",   bookData.meta.bookSubtitle);
   set("sbk-back-cover-text", bookData.meta.backCoverText);
-  set("sbk-spine-text",      bookData.meta.spineText);
+  // Lomo: mostrar spineText si existe, si no mostrar título como valor por defecto
+  const spineEl=document.getElementById("sbk-spine-text");
+  if(spineEl){
+    spineEl.value=bookData.meta.spineText||"";
+    spineEl.placeholder=bookData.meta.bookTitle||"Igual al título del libro";
+  }
   set("sbk-spine-color",     bookData.settings.spineColor||"#1e3a5f");
   set("sbk-character-mode",  bookData.characters.mode);
   set("sbk-character-count", bookData.characters.global.length);
@@ -268,8 +273,15 @@ async function generateFullBookText() {
       const text=await callTextAPI(page);
       if(page.type==="cover"){
         const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
-        page.title=lines[0]||""; page.subtitle=lines[1]||""; page.backText=lines.slice(2).join("\n")||""; page.text=text;
-        bookData.meta.bookTitle=page.title; bookData.meta.bookSubtitle=page.subtitle; bookData.meta.backCoverText=page.backText;
+        // Limpiar prefijos que pueda devolver la IA
+        page.title=(lines[0]||"").replace(/^T[IÍ]TULO\s*:/i,"").trim();
+        page.subtitle=(lines[1]||"").replace(/^SUBT[IÍ]TULO\s*:/i,"").trim();
+        const bi=lines.findIndex(l=>/CONTRAPORTADA\s*:/i.test(l));
+        page.backText= bi>=0 ? lines.slice(bi+1).join("\n").trim() : lines.slice(2).join("\n").trim();
+        page.text=text;
+        bookData.meta.bookTitle=page.title;
+        bookData.meta.bookSubtitle=page.subtitle;
+        bookData.meta.backCoverText=page.backText;
       } else if(page.type==="story-cover"){
         page.title=text.trim(); page.text=text.trim();
         const idx=bookData.stories.findIndex(s=>s.id===page.storyId);
@@ -296,7 +308,11 @@ async function generateFullBookText() {
     indexPage.text=lines.join("\n");
   }
 
-  syncSettingsUI(); renderStoryTitles(); renderPageList(); renderStoryList(); saveProject();
+  syncSettingsUI(); renderStoryTitles(); renderPageList(); renderStoryList();
+  // Refrescar spread de portada si está seleccionada o seleccionarla
+  const coverPage=bookData.pages.find(p=>p.type==="cover");
+  if(coverPage){ editorState.currentPageId=coverPage.id; selectPage(coverPage.id); }
+  saveProject();
   alert("Textos generados correctamente ✍️");
 }
 
@@ -661,11 +677,19 @@ function bindEditorControls() {
       const text=await callTextAPI(page);
       if(page.type==="cover"){
         const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
-        page.title=lines[0]||""; page.subtitle=lines[1]||""; page.backText=lines.slice(2).join("\n").trim(); page.text=text;
-        bookData.meta.bookTitle=page.title; bookData.meta.bookSubtitle=page.subtitle; bookData.meta.backCoverText=page.backText;
-        document.getElementById("sbk-back-cover-text").value=page.backText;
-        document.getElementById("sbk-book-title").value=page.title;
-        document.getElementById("sbk-book-subtitle").value=page.subtitle;
+        page.title=(lines[0]||"").replace(/^T[I\xCD]TULO\s*:/i,"").trim();
+        page.subtitle=(lines[1]||"").replace(/^SUBT[I\xCD]TULO\s*:/i,"").trim();
+        const bi=lines.findIndex(l=>/CONTRAPORTADA\s*:/i.test(l));
+        page.backText= bi>=0 ? lines.slice(bi+1).join("\n").trim() : lines.slice(2).join("\n").trim();
+        page.text=text;
+        bookData.meta.bookTitle=page.title;
+        bookData.meta.bookSubtitle=page.subtitle;
+        bookData.meta.backCoverText=page.backText;
+        const setV=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
+        setV("sbk-book-title",      page.title);
+        setV("sbk-book-subtitle",   page.subtitle);
+        setV("sbk-back-cover-text", page.backText);
+        if(!bookData.meta.spineText){ bookData.meta.spineText=page.title; setV("sbk-spine-text", page.title); }
       } else { page.text=text; }
       loadPageControls(page); renderPagePreview(page); saveProject();
     } catch(e){ console.error(e); alert("Error generando texto"); }

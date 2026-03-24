@@ -467,12 +467,18 @@
   font-style: italic; margin: 0;
 }
 
-/* Lomo */
+/* Lomo — centrado perfecto vertical y horizontal */
 #sbk-app .sbk__spineText {
-  writing-mode: vertical-rl; transform: rotate(180deg);
-  font-size: 7px; font-weight: 600; color: rgba(255,255,255,0.85);
-  letter-spacing: 0.05em; white-space: nowrap;
-  overflow: hidden; max-height: 90%;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 7px; font-weight: 600;
+  color: rgba(255,255,255,0.88);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 86%;
+  text-align: center;
 }
 
 /* Etiquetas de zona */
