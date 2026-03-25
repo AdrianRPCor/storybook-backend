@@ -81,14 +81,35 @@ function ensureCharacters() {
 }
 
 /* ===================== PERSISTENCIA ===================== */
-function cleanImages() {
-  (bookData.pages||[]).forEach(p => { if (p.imageUrl?.startsWith("data:")) p.imageUrl = null; });
-  (bookData.characters?.global||[]).forEach(c => { if (c.imageUrl?.startsWith("data:")) c.imageUrl = null; });
+// Clonar bookData sin imágenes base64 (que pueden ser enormes)
+function bookDataForStorage() {
+  const clone = JSON.parse(JSON.stringify(bookData));
+  // Mantener URLs remotas (https://...) pero eliminar base64
+  (clone.pages||[]).forEach(p => {
+    if (p.imageUrl?.startsWith("data:"))    p.imageUrl    = null;
+    if (p.backImageUrl?.startsWith("data:")) p.backImageUrl = null;
+  });
+  (clone.characters?.global||[]).forEach(c => {
+    if (c.imageUrl?.startsWith("data:")) c.imageUrl = null;
+  });
+  return clone;
 }
+
 function saveProject() {
-  try { cleanImages(); localStorage.setItem(STORAGE_KEY, JSON.stringify({ bookData, editorState })); }
-  catch(e) { console.warn("Storage lleno", e); }
+  try {
+    const payload = JSON.stringify({ bookData: bookDataForStorage(), editorState });
+    localStorage.setItem(STORAGE_KEY, payload);
+  } catch(e) {
+    // Si falla por tamaño, guardar solo meta + settings sin imágenes
+    try {
+      const slim = bookDataForStorage();
+      slim.pages = (slim.pages||[]).map(p => ({ ...p, imageUrl: null, backImageUrl: null }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ bookData: slim, editorState }));
+      console.warn("⚠️ Guardado sin imágenes por espacio");
+    } catch(e2) { console.error("❌ No se pudo guardar:", e2); }
+  }
 }
+
 function loadProject() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
@@ -106,9 +127,11 @@ function loadProject() {
     }
     if (p.editorState) Object.assign(editorState, p.editorState);
     renderPageList();
+    renderStoryList();
     if (editorState.currentPageId) selectPage(editorState.currentPageId);
   } catch(e) { console.error("Error cargando proyecto", e); }
 }
+
 function resetProject() {
   if (!confirm("¿Borrar el proyecto actual?")) return;
   localStorage.removeItem(STORAGE_KEY);
@@ -126,19 +149,29 @@ function syncSettingsUI() {
   set("sbk-trim",            bookData.settings.trim);
   set("sbk-visual-style",    bookData.settings.visualStyle);
   set("sbk-palette",         bookData.settings.palette);
+  // Campos de portada — siempre forzados desde bookData.meta
   set("sbk-book-title",      bookData.meta.bookTitle);
   set("sbk-book-subtitle",   bookData.meta.bookSubtitle);
   set("sbk-back-cover-text", bookData.meta.backCoverText);
-  // Lomo: mostrar spineText si existe, si no mostrar título como valor por defecto
+  // Lomo: valor real o vacío con placeholder = título
   const spineEl=document.getElementById("sbk-spine-text");
   if(spineEl){
     spineEl.value=bookData.meta.spineText||"";
     spineEl.placeholder=bookData.meta.bookTitle||"Igual al título del libro";
   }
-  set("sbk-spine-color",     bookData.settings.spineColor||"#1e3a5f");
+  set("sbk-spine-color", bookData.settings.spineColor||"#1e3a5f");
   set("sbk-character-mode",  bookData.characters.mode);
   set("sbk-character-count", bookData.characters.global.length);
   document.documentElement.style.setProperty("--textBoxColor", bookData.settings.textBoxColor||"#f9fafb");
+  // Forzar campos de portada otra vez tras posibles renders intermedios
+  requestAnimationFrame(()=>{
+    const t=document.getElementById("sbk-book-title");
+    const s=document.getElementById("sbk-book-subtitle");
+    const b=document.getElementById("sbk-back-cover-text");
+    if(t && t.value!==bookData.meta.bookTitle) t.value=bookData.meta.bookTitle||"";
+    if(s && s.value!==bookData.meta.bookSubtitle) s.value=bookData.meta.bookSubtitle||"";
+    if(b && b.value!==bookData.meta.backCoverText) b.value=bookData.meta.backCoverText||"";
+  });
 }
 
 function bindGlobalInputs() {
@@ -308,11 +341,22 @@ async function generateFullBookText() {
     indexPage.text=lines.join("\n");
   }
 
-  syncSettingsUI(); renderStoryTitles(); renderPageList(); renderStoryList();
-  // Refrescar spread de portada si está seleccionada o seleccionarla
-  const coverPage=bookData.pages.find(p=>p.type==="cover");
-  if(coverPage){ editorState.currentPageId=coverPage.id; selectPage(coverPage.id); }
+  // Forzar sincronía de campos ANTES de renderizar spread
+  syncSettingsUI();
+  // Doble forzado explícito por si syncSettingsUI llega antes que el DOM esté listo
+  const _setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||""; };
+  _setVal("sbk-book-title",      bookData.meta.bookTitle);
+  _setVal("sbk-book-subtitle",   bookData.meta.bookSubtitle);
+  _setVal("sbk-back-cover-text", bookData.meta.backCoverText);
+  _setVal("sbk-spine-text",      bookData.meta.spineText||bookData.meta.bookTitle);
+
+  renderStoryTitles(); renderPageList(); renderStoryList();
   saveProject();
+
+  // Navegar a portada y refrescar spread
+  const coverPage=bookData.pages.find(p=>p.type==="cover");
+  if(coverPage) selectPage(coverPage.id);
+
   alert("Textos generados correctamente ✍️");
 }
 
@@ -726,41 +770,111 @@ function bindEditorControls() {
 }
 
 /* ===================== HISTÓRICO ===================== */
-function getHistory(){ try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]"); }catch(e){ return []; } }
-function setHistory(list){ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }
+function getHistory(){
+  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]"); }
+  catch(e){ return []; }
+}
+
+function setHistory(list){
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  } catch(e) {
+    // Si no cabe, guardar solo los 5 más recientes sin imágenes
+    const slim = list.slice(0,5).map(entry=>({
+      ...entry,
+      data: {
+        ...entry.data,
+        bookData: {
+          ...entry.data.bookData,
+          pages: (entry.data.bookData.pages||[]).map(p=>({...p, imageUrl:null, backImageUrl:null}))
+        }
+      }
+    }));
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(slim)); }
+    catch(e2){ console.error("❌ Histórico no cabe en localStorage:", e2); }
+  }
+}
 
 function saveToHistory(){
   const h=getHistory();
-  const cp=bookData.pages.find(p=>p.type==="cover");
-  const title=bookData.meta.bookTitle||cp?.text?.trim().slice(0,40)||`Libro ${h.length+1}`;
-  h.unshift({ id:"hist_"+Date.now(), title, savedAt:Date.now(), data:{ bookData:JSON.parse(JSON.stringify(bookData)), editorState:JSON.parse(JSON.stringify(editorState)) } });
-  setHistory(h); renderHistory();
+  const title=bookData.meta.bookTitle||`Libro ${h.length+1}`;
+  if(!title||title==="Título del libro"){ alert("Genera el libro primero para poder guardarlo en el histórico"); return; }
+  // Guardar sin imágenes base64 para ahorrar espacio
+  const safeBookData = bookDataForStorage();
+  const entry = {
+    id: "hist_"+Date.now(),
+    title,
+    savedAt: Date.now(),
+    numStories: bookData.settings.numStories,
+    numPages: bookData.pages.length,
+    data: { bookData: safeBookData, editorState: JSON.parse(JSON.stringify(editorState)) }
+  };
+  h.unshift(entry);
+  setHistory(h);
+  renderHistory();
+  alert(`"${title}" guardado en el histórico ✅`);
 }
 
 function loadFromHistory(id){
-  const e=getHistory().find(h=>h.id===id); if(!e) return;
-  Object.assign(bookData,e.data.bookData); Object.assign(editorState,e.data.editorState);
-  syncSettingsUI(); renderStoryThemes(); renderStoryTitles(); renderCharacters(); renderPageList(); renderStoryList();
+  const entry=getHistory().find(h=>h.id===id); if(!entry) return;
+  if(!confirm(`¿Cargar "${entry.title}"? El proyecto actual se reemplazará.`)) return;
+  Object.assign(bookData, entry.data.bookData);
+  Object.assign(editorState, entry.data.editorState);
+  ensureCharacters();
+  syncSettingsUI(); renderStoryThemes(); renderStoryTitles();
+  renderCharacters(); renderPageList(); renderStoryList();
   if(editorState.currentPageId) selectPage(editorState.currentPageId);
   saveProject();
 }
 
+function duplicateFromHistory(id){
+  const entry=getHistory().find(h=>h.id===id); if(!entry) return;
+  const h=getHistory();
+  const newEntry = {
+    ...JSON.parse(JSON.stringify(entry)),
+    id: "hist_"+Date.now(),
+    title: entry.title+" (copia)",
+    savedAt: Date.now()
+  };
+  // Insertar justo después del original
+  const idx=h.findIndex(e=>e.id===id);
+  h.splice(idx+1,0,newEntry);
+  setHistory(h); renderHistory();
+}
+
 function deleteFromHistory(id){
-  if(!confirm("¿Eliminar este libro del histórico?")) return;
+  const entry=getHistory().find(h=>h.id===id);
+  if(!entry) return;
+  if(!confirm(`¿Eliminar "${entry.title}" del histórico?`)) return;
   setHistory(getHistory().filter(h=>h.id!==id)); renderHistory();
 }
 
 function renderHistory(){
   const list=document.getElementById("sbk-history-list"); if(!list) return;
   const h=getHistory();
-  if(!h.length){ list.innerHTML=`<div class="sbk__muted sbk__muted--tiny">Aún no hay libros guardados</div>`; return; }
+  if(!h.length){
+    list.innerHTML=`<div class="sbk__muted sbk__muted--tiny">Aún no hay libros guardados.<br>Genera un libro y pulsa "Guardar en histórico".</div>`;
+    return;
+  }
   list.innerHTML="";
   h.forEach(entry=>{
-    const btn=document.createElement("button"); btn.className="sbk__item";
-    btn.innerHTML=`<div class="sbk__itemLeft"><div class="sbk__itemTitle">${esc(entry.title)}</div><div class="sbk__itemMeta">${new Date(entry.savedAt).toLocaleString()}</div></div><div class="sbk__row"><span class="sbk__tag">LIBRO</span><button class="sbk__btn sbk__btn--small sbk__btn--ghost" style="font-size:12px;">✕</button></div>`;
-    btn.addEventListener("click",()=>loadFromHistory(entry.id));
-    btn.querySelector("button").addEventListener("click",e=>{ e.stopPropagation(); deleteFromHistory(entry.id); });
-    list.appendChild(btn);
+    const item=document.createElement("div"); item.className="sbk__item sbk__histItem";
+    const pages=entry.numPages||"?";
+    const stories=entry.numStories||"?";
+    item.innerHTML=`
+      <div class="sbk__itemLeft" style="flex:1;min-width:0;">
+        <div class="sbk__itemTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(entry.title)}</div>
+        <div class="sbk__itemMeta">${new Date(entry.savedAt).toLocaleString()} · ${stories} cuentos · ${pages} págs.</div>
+      </div>
+      <div class="sbk__row" style="flex-shrink:0;gap:4px;">
+        <button class="sbk__btn sbk__btn--small sbk__btn--primary hist-load" title="Cargar">Cargar</button>
+        <button class="sbk__btn sbk__btn--small hist-dup" title="Duplicar">Duplicar</button>
+        <button class="sbk__btn sbk__btn--small sbk__btn--danger hist-del" title="Eliminar">✕</button>
+      </div>`;
+    item.querySelector(".hist-load").addEventListener("click", e=>{ e.stopPropagation(); loadFromHistory(entry.id); });
+    item.querySelector(".hist-dup").addEventListener("click",  e=>{ e.stopPropagation(); duplicateFromHistory(entry.id); });
+    item.querySelector(".hist-del").addEventListener("click",  e=>{ e.stopPropagation(); deleteFromHistory(entry.id); });
+    list.appendChild(item);
   });
 }
 
