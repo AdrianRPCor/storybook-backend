@@ -509,3 +509,40 @@
   #sbk-app .sbk__grid4 { grid-template-columns: 1fr; }
   #sbk-app .sbk__coverSpread { transform: scale(0.55); transform-origin: top left; }
 }
+
+/* ==========================================================
+   LOGO EN PORTADA
+   ========================================================== */
+#sbk-app .sbk__coverLogoWrap {
+  position: absolute;
+  bottom: 12px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.15);
+  border-radius: 6px; padding: 4px 8px;
+}
+#sbk-app .sbk__coverLogo {
+  height: 28px; width: auto; object-fit: contain;
+  display: block;
+}
+#sbk-app .sbk__coverLogoFront {
+  position: absolute;
+  bottom: 28px; right: 12px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 6px; padding: 4px 6px;
+}
+#sbk-app .sbk__coverLogoSmall {
+  height: 22px; width: auto; object-fit: contain;
+  display: block;
+}
+
+/* ==========================================================
+   CONTROLES EDITOR PORTADA
+   ========================================================== */
+#sbk-app .sbk__coverFieldsGrid {
+  display: flex; flex-direction: column; gap: 8px;
+}
+#sbk-app .sbk__logoUploadWrap {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 10px;
+}

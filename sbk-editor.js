@@ -272,9 +272,9 @@ function generateBookStructure() {
   const blank=()=>({ id:uid(), type:"blank", color:blankPageColor, order:order++ });
 
   bookData.pages.push({ id:uid(), type:"cover", title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, backImagePrompt:"", backImageUrl:null, order:order++ });
-  bookData.pages.push(blank());
+  bookData.pages.push(blank()); // verso portada (página ii, siempre en blanco en libros infantiles)
   bookData.pages.push({ id:uid(), type:"index", text:"", imagePrompt:"", imageUrl:null, order:order++ });
-  bookData.pages.push(blank());
+  // Sin blank tras índice — libros infantiles no tienen páginas vacías entre secciones
 
   for(let i=0;i<numStories;i++){
     const storyId=uid();
@@ -361,8 +361,10 @@ async function generateFullBookText() {
 }
 
 function fmtIndexLine(title, num) {
-  const total=40, ps=String(num), maxT=total-ps.length-8;
-  let t=title.length>maxT ? title.slice(0,maxT-3)+"..." : title;
+  // 58 chars = ancho realista del índice en el PDF (PDFKit no trunca)
+  const total=58, ps=String(num);
+  // No truncar el título — el PDF tiene espacio de sobra
+  const t=title;
   const dots=".".repeat(Math.max(4, total-t.length-ps.length-2));
   return `${t} ${dots} ${ps}`;
 }
@@ -372,7 +374,8 @@ async function generateImagesForBook() {
   for(const page of bookData.pages){
     const needs=["cover","story-cover","story"].includes(page.type);
     if(!needs) continue;
-    if(!page.text?.trim()){ console.warn("Sin texto, saltando imagen:", page.type); continue; }
+    // Cover siempre genera aunque page.text esté vacío — usa título del libro
+    if(page.type!=="cover" && !page.text?.trim()){ console.warn("Sin texto, saltando imagen:", page.type); continue; }
     if(!page.imagePrompt?.trim()) page.imagePrompt=buildPrompt(page);
     try {
       page.imageUrl=await callImageAPI(page.imagePrompt);
@@ -643,10 +646,39 @@ function renderCoverSpread(page) {
     else { backImg.style.display="none"; }
   }
 
-  // Fondo fallback
+  // Fondo fallback contraportada
   const backFill=document.getElementById("sbk-cover-back-fill");
-  const frontFill=document.getElementById("sbk-cover-front-fill");
   if(backFill) backFill.style.background=page.backImageUrl?"transparent":"rgba(30,58,95,0.85)";
+
+  // Logo ONG
+  const logoUrl=bookData.meta.logoUrl||null;
+  const logoWrap=document.getElementById("sbk-cover-logo-wrap");
+  const logoImg=document.getElementById("sbk-cover-logo-preview");
+  const logoFrontWrap=document.getElementById("sbk-cover-logo-front");
+  const logoFrontImg=document.getElementById("sbk-cover-logo-front-preview");
+  if(logoUrl){
+    if(logoWrap){ logoWrap.style.display="block"; }
+    if(logoImg){ logoImg.src=logoUrl; }
+    if(logoFrontWrap){ logoFrontWrap.style.display="block"; }
+    if(logoFrontImg){ logoFrontImg.src=logoUrl; }
+    // Mostrar logo en el lomo también (pequeño)
+    const spineEl=document.getElementById("sbk-spine-text-preview");
+    if(spineEl) spineEl.style.display="block";
+  } else {
+    if(logoWrap) logoWrap.style.display="none";
+    if(logoFrontWrap) logoFrontWrap.style.display="none";
+  }
+
+  // Sincronizar campo de logo en el panel de controles
+  const logoFilename=document.getElementById("sbk-logo-filename");
+  const logoClearBtn=document.getElementById("sbk-logo-clear");
+  if(logoUrl){
+    if(logoFilename) logoFilename.textContent="Logo cargado";
+    if(logoClearBtn) logoClearBtn.style.display="inline-block";
+  } else {
+    if(logoFilename) logoFilename.textContent="Sin logo";
+    if(logoClearBtn) logoClearBtn.style.display="none";
+  }
 }
 
 function updateCoverPreview() {
@@ -656,6 +688,34 @@ function updateCoverPreview() {
 
 /* ===================== CONTROLES EDITOR ===================== */
 function loadPageControls(page) {
+  const normalPanel = document.getElementById("sbk-controls-normal");
+  const coverPanel  = document.getElementById("sbk-controls-cover");
+
+  if(page.type==="cover"){
+    // Mostrar panel portada, ocultar normal
+    if(normalPanel) normalPanel.style.display="none";
+    if(coverPanel)  coverPanel.style.display="block";
+
+    // Rellenar campos portada desde bookData.meta
+    const sv=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||""; };
+    sv("sbk-cover-title-edit",    bookData.meta.bookTitle);
+    sv("sbk-cover-subtitle-edit", bookData.meta.bookSubtitle);
+    sv("sbk-cover-back-edit",     bookData.meta.backCoverText);
+    sv("sbk-cover-spine-edit",    bookData.meta.spineText||bookData.meta.bookTitle);
+    sv("sbk-cover-front-prompt",  page.imagePrompt||"");
+    sv("sbk-cover-back-prompt",   page.backImagePrompt||"");
+
+    // Desactivar botones regen principales (usan los propios del panel portada)
+    const regenImgBtn=document.getElementById("sbk-regen-image");
+    if(regenImgBtn){ regenImgBtn.disabled=true; regenImgBtn.style.opacity="0.4"; }
+
+    return;
+  }
+
+  // Panel normal para todo lo demás
+  if(normalPanel) normalPanel.style.display="block";
+  if(coverPanel)  coverPanel.style.display="none";
+
   const textEditor=document.getElementById("sbk-text-editor");
   const promptEditor=document.getElementById("sbk-prompt-editor");
   const promptLabel=document.getElementById("sbk-prompt-label");
@@ -666,14 +726,7 @@ function loadPageControls(page) {
 
   const noImage=["index","adult-guide","ngo","blank"].includes(page.type);
 
-  // Texto
-  if(page.type==="cover"){
-    textEditor.value=`TÍTULO: ${page.title||""}\nSUBTÍTULO: ${page.subtitle||""}\n\nCONTRAPORTADA:\n${page.backText||""}`;
-  } else {
-    textEditor.value=page.text||"";
-  }
-
-  // Prompt imagen
+  textEditor.value=page.text||"";
   promptEditor.value=page.imagePrompt||"";
   promptEditor.disabled=noImage;
   if(promptLabel) promptLabel.style.opacity=noImage?"0.45":"1";
@@ -713,6 +766,79 @@ function bindEditorControls() {
       page.imagePrompt=promptEditor.value; saveProject();
     });
   }
+
+  // ---- BINDINGS PANEL PORTADA ----
+  const coverBind=(id, fn)=>{ const el=document.getElementById(id); if(el) el.addEventListener("input",fn); };
+
+  coverBind("sbk-cover-title-edit", e=>{
+    bookData.meta.bookTitle=e.target.value;
+    // Sincronizar también el input global
+    const g=document.getElementById("sbk-book-title"); if(g) g.value=e.target.value;
+    updateCoverPreview(); saveProject();
+  });
+  coverBind("sbk-cover-subtitle-edit", e=>{
+    bookData.meta.bookSubtitle=e.target.value;
+    const g=document.getElementById("sbk-book-subtitle"); if(g) g.value=e.target.value;
+    updateCoverPreview(); saveProject();
+  });
+  coverBind("sbk-cover-back-edit", e=>{
+    bookData.meta.backCoverText=e.target.value;
+    const g=document.getElementById("sbk-back-cover-text"); if(g) g.value=e.target.value;
+    // Actualizar también la página cover
+    const cp=bookData.pages.find(p=>p.type==="cover");
+    if(cp) cp.backText=e.target.value;
+    updateCoverPreview(); saveProject();
+  });
+  coverBind("sbk-cover-spine-edit", e=>{
+    bookData.meta.spineText=e.target.value;
+    const g=document.getElementById("sbk-spine-text"); if(g) g.value=e.target.value;
+    updateCoverPreview(); saveProject();
+  });
+  coverBind("sbk-cover-front-prompt", e=>{
+    const cp=bookData.pages.find(p=>p.type==="cover");
+    if(cp) cp.imagePrompt=e.target.value; saveProject();
+  });
+  coverBind("sbk-cover-back-prompt", e=>{
+    const cp=bookData.pages.find(p=>p.type==="cover");
+    if(cp) cp.backImagePrompt=e.target.value; saveProject();
+  });
+
+  // Botones regenerar imagen portada/contraportada
+  document.getElementById("sbk-regen-cover-front")?.addEventListener("click", async()=>{
+    const cp=bookData.pages.find(p=>p.type==="cover"); if(!cp) return;
+    if(!cp.imagePrompt?.trim()){ cp.imagePrompt=buildPrompt(cp); document.getElementById("sbk-cover-front-prompt").value=cp.imagePrompt; }
+    try { cp.imageUrl=await callImageAPI(cp.imagePrompt); renderPagePreview(cp); saveProject(); alert("Imagen portada generada ✅"); }
+    catch(e){ alert("Error generando imagen portada"); }
+  });
+  document.getElementById("sbk-regen-cover-back")?.addEventListener("click", async()=>{
+    const cp=bookData.pages.find(p=>p.type==="cover"); if(!cp) return;
+    if(!cp.backImagePrompt?.trim()){ cp.backImagePrompt=buildBackPrompt(cp); document.getElementById("sbk-cover-back-prompt").value=cp.backImagePrompt; }
+    try { cp.backImageUrl=await callImageAPI(cp.backImagePrompt); renderPagePreview(cp); saveProject(); alert("Imagen contraportada generada ✅"); }
+    catch(e){ alert("Error generando imagen contraportada"); }
+  });
+
+  // Logo upload
+  document.getElementById("sbk-logo-upload-btn")?.addEventListener("click",()=>{
+    document.getElementById("sbk-logo-upload")?.click();
+  });
+  document.getElementById("sbk-logo-upload")?.addEventListener("change", e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      bookData.meta.logoUrl=ev.target.result;
+      document.getElementById("sbk-logo-filename").textContent=file.name;
+      document.getElementById("sbk-logo-clear").style.display="inline-block";
+      updateCoverPreview(); saveProject();
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById("sbk-logo-clear")?.addEventListener("click",()=>{
+    bookData.meta.logoUrl=null;
+    document.getElementById("sbk-logo-filename").textContent="Sin logo";
+    document.getElementById("sbk-logo-clear").style.display="none";
+    document.getElementById("sbk-logo-upload").value="";
+    updateCoverPreview(); saveProject();
+  });
 
   // Regenerar texto página actual
   document.getElementById("sbk-regen-text")?.addEventListener("click", async()=>{

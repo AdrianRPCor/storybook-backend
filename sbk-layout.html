@@ -206,11 +206,15 @@
                     <div class="sbk__coverBackTextBox" id="sbk-cover-back-textbox">
                       <p class="sbk__coverBackText" id="sbk-cover-back-text-preview">Texto contraportada…</p>
                     </div>
+                    <!-- Logo en contraportada (inferior) -->
+                    <div class="sbk__coverLogoWrap" id="sbk-cover-logo-wrap" style="display:none;">
+                      <img id="sbk-cover-logo-preview" src="" alt="Logo ONG" class="sbk__coverLogo">
+                    </div>
                     <span class="sbk__zoneLabel">contraportada</span>
                   </div>
                   <!-- Lomo -->
                   <div class="sbk__coverZone sbk__coverZone--spine" id="sbk-cover-spine">
-                    <span class="sbk__spineText" id="sbk-spine-text-preview">Título</span>
+                    <span class="sbk__spineText" id="sbk-spine-text-preview"></span>
                     <span class="sbk__zoneLabel sbk__zoneLabel--spine">lomo</span>
                   </div>
                   <!-- Portada frontal -->
@@ -220,6 +224,10 @@
                     <div class="sbk__coverFrontOverlay">
                       <div class="sbk__coverFrontTitle" id="sbk-cover-front-title">Título del libro</div>
                       <div class="sbk__coverFrontSubtitle" id="sbk-cover-front-subtitle">Subtítulo</div>
+                    </div>
+                    <!-- Logo en portada frontal (esquina inferior derecha) -->
+                    <div class="sbk__coverLogoFront" id="sbk-cover-logo-front" style="display:none;">
+                      <img id="sbk-cover-logo-front-preview" src="" alt="Logo ONG" class="sbk__coverLogoSmall">
                     </div>
                     <span class="sbk__zoneLabel">portada</span>
                   </div>
@@ -235,16 +243,65 @@
 
               <!-- CONTROLES DERECHA -->
               <div class="sbk__controls" id="sbk-controls">
-                <label class="sbk__label">Texto de la página
-                  <textarea class="sbk__textarea" id="sbk-text-editor" rows="8" placeholder="El texto de esta página aparecerá aquí…"></textarea>
-                </label>
-                <label class="sbk__label" id="sbk-prompt-label">Prompt de imagen IA
-                  <textarea class="sbk__textarea" id="sbk-prompt-editor" rows="5" placeholder="Describe la ilustración que quieres generar…"></textarea>
-                </label>
-                <div class="sbk__row" style="margin-top:8px;">
-                  <button class="sbk__btn sbk__btn--primary sbk__btn--small" id="sbk-regen-image-ctrl">Generar imagen IA</button>
-                  <button class="sbk__btn sbk__btn--small" id="sbk-save-page">Guardar página</button>
+
+                <!-- CONTROLES NORMALES (páginas no-portada) -->
+                <div id="sbk-controls-normal">
+                  <label class="sbk__label">Texto de la página
+                    <textarea class="sbk__textarea" id="sbk-text-editor" rows="8" placeholder="El texto de esta página aparecerá aquí…"></textarea>
+                  </label>
+                  <label class="sbk__label" id="sbk-prompt-label">Prompt de imagen IA
+                    <textarea class="sbk__textarea" id="sbk-prompt-editor" rows="5" placeholder="Describe la ilustración que quieres generar…"></textarea>
+                  </label>
+                  <div class="sbk__row" style="margin-top:8px;">
+                    <button class="sbk__btn sbk__btn--primary sbk__btn--small" id="sbk-regen-image-ctrl">Generar imagen IA</button>
+                    <button class="sbk__btn sbk__btn--small" id="sbk-save-page">Guardar página</button>
+                  </div>
                 </div>
+
+                <!-- CONTROLES PORTADA (solo visible en mode cover) -->
+                <div id="sbk-controls-cover" style="display:none;">
+                  <div class="sbk__coverFieldsGrid">
+
+                    <label class="sbk__label">Título del libro
+                      <input class="sbk__input" id="sbk-cover-title-edit" type="text" placeholder="Título emocional del libro">
+                    </label>
+                    <label class="sbk__label">Subtítulo
+                      <input class="sbk__input" id="sbk-cover-subtitle-edit" type="text" placeholder="5 cuentos para aprender emociones">
+                    </label>
+                    <label class="sbk__label">Texto del lomo
+                      <input class="sbk__input" id="sbk-cover-spine-edit" type="text" placeholder="Se usa el título si está vacío">
+                    </label>
+                    <label class="sbk__label">Texto de contraportada
+                      <textarea class="sbk__textarea" id="sbk-cover-back-edit" rows="4" placeholder="Texto breve para la contraportada…"></textarea>
+                    </label>
+
+                    <div class="sbk__divider"></div>
+
+                    <label class="sbk__label">Logo de la ONG (PNG/JPG)
+                      <div class="sbk__logoUploadWrap">
+                        <input type="file" id="sbk-logo-upload" accept="image/*" style="display:none;">
+                        <button class="sbk__btn sbk__btn--small" id="sbk-logo-upload-btn">Subir logo</button>
+                        <span class="sbk__muted sbk__muted--tiny" id="sbk-logo-filename">Sin logo</span>
+                        <button class="sbk__btn sbk__btn--small sbk__btn--ghost" id="sbk-logo-clear" style="display:none;">✕ Quitar</button>
+                      </div>
+                      <div class="sbk__muted sbk__muted--tiny" style="margin-top:4px;">Aparece en el lomo y en la esquina inferior derecha de la portada</div>
+                    </label>
+
+                    <div class="sbk__divider"></div>
+
+                    <label class="sbk__label">Prompt imagen portada frontal
+                      <textarea class="sbk__textarea" id="sbk-cover-front-prompt" rows="4" placeholder="Describe la ilustración de portada…"></textarea>
+                    </label>
+                    <label class="sbk__label">Prompt imagen contraportada
+                      <textarea class="sbk__textarea" id="sbk-cover-back-prompt" rows="4" placeholder="Describe la ilustración de contraportada…"></textarea>
+                    </label>
+                    <div class="sbk__row" style="margin-top:8px;">
+                      <button class="sbk__btn sbk__btn--primary sbk__btn--small" id="sbk-regen-cover-front">Generar imagen portada</button>
+                      <button class="sbk__btn sbk__btn--primary sbk__btn--small" id="sbk-regen-cover-back">Generar imagen contraportada</button>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
             </div>
