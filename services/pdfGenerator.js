@@ -534,8 +534,8 @@ export async function generateCoverPdf(bookData) {
     .fill("rgba(0,0,0,0.45)");
 
   // Texto contraportada — usar meta o page.backText como fallback
-  const coverPage = (bookData?.pages || []).find(p => p.type === "cover");
-  const effectiveBackText = backText || coverPage?.backText || "";
+  const coverPageRef = (bookData?.pages || []).find(p => p.type === "cover");
+  const effectiveBackText = backText || coverPageRef?.backText || "";
 
   if (effectiveBackText) {
     doc
