@@ -462,7 +462,7 @@ function addPageNumber(doc, pageNum) {
 // ============================================================
 export async function generateCoverPdf(bookData) {
   // Calcular páginas reales del libro para el grosor del lomo
-  const PAGE_COUNT = (bookData?.pages||[]).filter(p=>p.type!=="blank").length || 68;
+  const PAGE_COUNT = 68; // Fijo para KDP: grosor estándar tapa dura 68 páginas
   const PAPER_FACTOR = 0.002252;
 
   const BLEED = 0.125 * 72;
