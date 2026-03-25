@@ -297,8 +297,7 @@ function generateBookStructure() {
   }
 
   bookData.pages.push({ id:uid(), type:"closing", text:"", imagePrompt:"", imageUrl:null, order:order++ });
-  bookData.pages.push({ id:uid(), type:"adult-guide", text:"", order:order++ });
-  bookData.pages.push({ id:uid(), type:"adult-guide", text:"", order:order++ });
+  bookData.pages.push({ id:uid(), type:"adult-guide", text:"", order:order++ }); // 1 sola página para quien acompaña
   bookData.pages.push({ id:uid(), type:"ngo", text:"", order:order++ });
   bookData.pages.push(blank());
 
@@ -555,17 +554,12 @@ function renderPagePreview(page) {
   }
 
   // ---- MODO POR TIPO ----
-  if(page.type==="story"||page.type==="closing"){
-    // Imagen 58% (como PDF), caja texto resto
+  if(page.type==="story"){
+    // Imagen 62% (como PDF v2), caja texto resto
     imgArea.style.display="flex";
-    imgArea.style.height="62.9%"; // (H*0.58-MARGIN)/(H*0.8333)
+    imgArea.style.height="62.9%";
     textArea.style.background=bookData.settings.textBoxColor||"#f9fafb";
     if(pageNumEl) pageNumEl.textContent=page.pageNumber||"";
-
-    // Color de barra para closing
-    if(page.type==="closing"){
-      mock.style.setProperty("--pageAccentColor","#7c3aed");
-    }
     textPreview.textContent=page.text||"";
 
   } else if(page.type==="story-cover"){
@@ -584,13 +578,18 @@ function renderPagePreview(page) {
     if(pageNumEl) pageNumEl.textContent="";
     renderIndexPreview(page.text||"", textPreview);
 
-  } else if(page.type==="adult-guide"||page.type==="ngo"){
+  } else if(page.type==="adult-guide"||page.type==="ngo"||page.type==="closing"){
     mock.classList.add("sbk__pageMock--textOnly");
-    const col=PDF.TEXT_COLORS[page.type]||"#0e7490";
-    mock.style.setProperty("--pageAccentColor", col);
     imgArea.style.display="none";
     if(pageNumEl) pageNumEl.textContent="";
-    textPreview.textContent=page.text||"";
+    // Fondo = blankPageColor del usuario
+    mock.style.background=(bookData.settings.blankPageColor||"#ffffff");
+    // Títulos de sección igual que en el PDF
+    const sectionTitles={"closing":"Moraleja","adult-guide":"Para quien lee este cuento","ngo":"Sobre Proyecto Arena"};
+    const sTitle=sectionTitles[page.type]||"";
+    // Limpiar markdown del texto
+    const cleanText=(page.text||"").replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/#+\s/g,"");
+    textPreview.innerHTML=`<div class="sbk__sectionTitle">${sTitle}</div>${esc(cleanText)}`;
 
   } else if(page.type==="blank"){
     imgArea.style.display="none";
