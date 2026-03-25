@@ -324,6 +324,8 @@ async function generateFullBookText() {
         bookData.meta.bookTitle=page.title;
         bookData.meta.bookSubtitle=page.subtitle;
         bookData.meta.backCoverText=page.backText;
+        // Garantizar sync — el PDF usa ambos: meta y page.backText
+        console.log("✅ Portada parseada:", {title:page.title, subtitle:page.subtitle, backText:page.backText?.slice(0,40)});
       } else if(page.type==="story-cover"){
         page.title=text.trim(); page.text=text.trim();
         const idx=bookData.stories.findIndex(s=>s.id===page.storyId);
@@ -714,6 +716,9 @@ function loadPageControls(page) {
     sv("sbk-cover-subtitle-edit", bookData.meta.bookSubtitle);
     sv("sbk-cover-back-edit",     bookData.meta.backCoverText);
     sv("sbk-cover-spine-edit",    bookData.meta.spineText||bookData.meta.bookTitle);
+    // Color lomo
+    const scEl=document.getElementById("sbk-cover-spine-color-edit");
+    if(scEl) scEl.value=bookData.settings.spineColor||"#1e3a5f";
     sv("sbk-cover-front-prompt",  page.imagePrompt||"");
     sv("sbk-cover-back-prompt",   page.backImagePrompt||"");
 
@@ -807,6 +812,11 @@ function bindEditorControls() {
   coverBind("sbk-cover-spine-edit", e=>{
     bookData.meta.spineText=e.target.value;
     const g=document.getElementById("sbk-spine-text"); if(g) g.value=e.target.value;
+    updateCoverPreview(); saveProject();
+  });
+  coverBind("sbk-cover-spine-color-edit", e=>{
+    bookData.settings.spineColor=e.target.value;
+    const g=document.getElementById("sbk-spine-color"); if(g) g.value=e.target.value;
     updateCoverPreview(); saveProject();
   });
   coverBind("sbk-cover-front-prompt", e=>{
