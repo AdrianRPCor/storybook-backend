@@ -76,106 +76,88 @@ async function addCoverPage(doc, page, settings) {
 
 // ============================================================
 //  ÍNDICE EDITORIAL
+//  Fondo: color del usuario (blankPageColor)
+//  Imagen decorativa abajo si existe
 // ============================================================
-async function addIndexPage(doc, page) {
+async function addIndexPage(doc, page, settings) {
+  const bgColor = settings?.blankPageColor || "#ffffff";
   doc.addPage({ size: [W, H] });
-  doc.rect(0, 0, W, H).fill("#ffffff");
+  doc.rect(0, 0, W, H).fill(bgColor);
 
-  const imgBuf = page.imageUrl
-    ? await fetchImageBuffer(page.imageUrl)
-    : null;
+  const imgBuf = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
 
-  // Imagen estilo contraportada (personajes abajo)
+  // Imagen decorativa en parte inferior (personajes)
   if (imgBuf) {
-    const imgHeight = H * 0.35;
-
-    doc.image(imgBuf, 0, H - imgHeight, {
-      cover: [W, imgHeight]
-    });
-
-    // degradado suave arriba de la imagen
-    doc.rect(0, H - imgHeight - 60, W, 60)
-       .fill("#ffffff");
+    const imgHeight = H * 0.32;
+    const imgY = H - imgHeight;
+    doc.save();
+    doc.rect(0, imgY, W, imgHeight).clip();
+    doc.image(imgBuf, 0, imgY, { cover: [W, imgHeight], align: "center", valign: "top" });
+    doc.restore();
+    // Degradado suave sobre la imagen para que no corte bruscamente
+    doc.rect(0, imgY - 40, W, 40).fill(bgColor);
   }
-  
-  const paddingX = MARGIN + 10;
+
+  const paddingX = MARGIN + 14;
   const contentW = W - paddingX * 2;
 
   // Título "ÍNDICE"
   doc
     .font("Helvetica-Bold")
-    .fontSize(18)
+    .fontSize(20)
     .fillColor(COLOR_TEXT)
-    .text("ÍNDICE", 0, MARGIN + 10, { width: W, align: "center" });
+    .text("ÍNDICE", 0, MARGIN + 12, { width: W, align: "center" });
 
   // Línea decorativa
   doc
-    .moveTo(paddingX + 40, MARGIN + 38)
-    .lineTo(W - paddingX - 40, MARGIN + 38)
-    .strokeColor("#e5e7eb")
-    .lineWidth(1)
+    .moveTo(paddingX + 20, MARGIN + 42)
+    .lineTo(W - paddingX - 20, MARGIN + 42)
+    .strokeColor("#9ca3af")
+    .lineWidth(0.8)
     .stroke();
 
-  let y = MARGIN + 56;
+  let y = MARGIN + 58;
+  const maxY = imgBuf ? H * 0.62 : H - MARGIN - 20;
 
-  // Parsear líneas del índice
-  const lines = (page.text || "")
-    .split("\n")
-    .filter(l => l.trim() !== "");
+  const lines = (page.text || "").split("\n").filter(l => l.trim() !== "");
 
   lines.forEach(line => {
-    if (y > H * 0.6) return;
+    if (y > maxY) return;
 
-    // Detectar número de página al final
     const match = line.match(/^(.*?)\.{2,}\s*(\d+)\s*$/);
 
     if (match) {
       const titleText = match[1].trim();
       const pageNum   = match[2];
 
-      // Título de entrada — sin ellipsis, el PDF tiene ancho suficiente
       doc
         .font("Helvetica")
-        .fontSize(11)
+        .fontSize(12)
         .fillColor(COLOR_TEXT)
-        .text(titleText, paddingX, y, {
-          width: contentW - 30,
-          continued: false,
-          ellipsis: false
-        });
+        .text(titleText, paddingX, y, { width: contentW - 32, continued: false, ellipsis: false });
 
-      // Número de página (derecha)
       doc
         .font("Helvetica")
-        .fontSize(11)
+        .fontSize(12)
         .fillColor(COLOR_MUTED)
-        .text(pageNum, W - paddingX - 26, y, {
-          width: 26,
-          align: "right"
-        });
+        .text(pageNum, W - paddingX - 28, y, { width: 28, align: "right" });
 
-      // Línea de puntos
-      const titleW = doc.widthOfString(titleText, { font: "Helvetica", fontSize: 11 });
-      const numW   = 26;
+      const titleW = doc.widthOfString(titleText, { font: "Helvetica", fontSize: 12 });
       const dotsX1 = paddingX + titleW + 4;
-      const dotsX2 = W - paddingX - numW - 4;
-
+      const dotsX2 = W - paddingX - 32;
       if (dotsX2 > dotsX1 + 10) {
         doc
           .moveTo(dotsX1, y + 9)
           .lineTo(dotsX2, y + 9)
           .dash(2, { space: 3 })
-          .strokeColor("#d1d5db")
+          .strokeColor("#9ca3af")
           .lineWidth(0.5)
           .stroke()
           .undash();
       }
-
-      y += 22;
-
+      y += 26;
     } else {
-      // Línea de separación / vacía
-      y += 12;
+      y += 14;
     }
   });
 }
@@ -230,18 +212,19 @@ async function addStoryCoverPage(doc, page, storyIndex) {
 
 // ============================================================
 //  PÁGINA DE HISTORIA (texto + imagen)
+//  Imagen: 62% del alto — más visual, más infantil
+//  Texto: párrafos cortos, legibles, fuente más grande
 // ============================================================
 async function addStoryPage(doc, page, settings) {
   doc.addPage({ size: [W, H] });
   doc.rect(0, 0, W, H).fill("#ffffff");
 
   const imgBuf = await fetchImageBuffer(page.imageUrl);
-  const imgH   = H * 0.58; // 58% imagen
+  const imgH   = H * 0.62; // 62% imagen — más espacio visual
 
   if (imgBuf) {
-    // Imagen superior con bordes redondeados simulados (recortando)
     doc.save();
-    doc.roundedRect(MARGIN, MARGIN, W - MARGIN * 2, imgH - MARGIN, 10).clip();
+    doc.roundedRect(MARGIN, MARGIN, W - MARGIN * 2, imgH - MARGIN, 12).clip();
     doc.image(imgBuf, MARGIN, MARGIN, {
       fit: [W - MARGIN * 2, imgH - MARGIN],
       align: "center",
@@ -249,127 +232,169 @@ async function addStoryPage(doc, page, settings) {
     });
     doc.restore();
   } else {
-    // Placeholder gradiente
     doc
-      .roundedRect(MARGIN, MARGIN, W - MARGIN * 2, imgH - MARGIN, 10)
+      .roundedRect(MARGIN, MARGIN, W - MARGIN * 2, imgH - MARGIN, 12)
       .fill("#eef2f7");
     doc
       .font("Helvetica")
-      .fontSize(10)
+      .fontSize(11)
       .fillColor(COLOR_MUTED)
       .text("Ilustración", 0, MARGIN + (imgH - MARGIN) / 2 - 6, {
-        width: W,
-        align: "center"
+        width: W, align: "center"
       });
   }
 
   // Caja de texto inferior
   const textBoxColor = settings?.textBoxColor || "#f9fafb";
-  const textY = imgH + 4;
+  const textY = imgH + 6;
   const textBoxH = H - textY - MARGIN;
 
   doc
-    .roundedRect(MARGIN, textY, W - MARGIN * 2, textBoxH, 8)
+    .roundedRect(MARGIN, textY, W - MARGIN * 2, textBoxH, 10)
     .fill(textBoxColor);
 
-  // Texto del cuento (numeración solo abajo centrado via addPageNumber)
-  const text = page.text || "";
-  doc
-    .font("Helvetica")
-    .fontSize(13)
-    .fillColor(COLOR_TEXT)
-    .text(text, MARGIN + 12, textY + 16, {
-      width: W - MARGIN * 2 - 24,
+  // Texto: párrafos separados para facilitar lectura
+  const rawText = (page.text || "").trim();
+  // Dividir en párrafos (por punto final + espacio o salto de línea)
+  const paragraphs = rawText
+    .split(/(?<=\.)\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡"])/)
+    .filter(p => p.trim().length > 0);
+
+  let curY = textY + 14;
+  const textW = W - MARGIN * 2 - 28;
+  const fontSize = 13.5;
+  const leading = 7; // espacio entre párrafos
+
+  doc.font("Helvetica").fontSize(fontSize).fillColor(COLOR_TEXT);
+
+  paragraphs.forEach((para, i) => {
+    if (curY > H - MARGIN - 20) return; // no desbordar
+    doc.text(para.trim(), MARGIN + 14, curY, {
+      width: textW,
       align: "justify",
-      lineGap: 4
+      lineGap: 3
     });
+    curY = doc.y + leading;
+  });
 }
 
 // ============================================================
-//  PÁGINA DE TEXTO — diseño editorial limpio
-//  closing / adult-guide / ngo
+//  PÁGINA DE TEXTO — diseño limpio infantil editorial
+//  closing (Moraleja) / adult-guide (Para quien lee) / ngo (Proyecto Arena)
 // ============================================================
-async function addTextPage(doc, page) {
+async function addTextPage(doc, page, settings) {
+  const bgColor = settings?.blankPageColor || "#ffffff";
   doc.addPage({ size: [W, H] });
-  doc.rect(0, 0, W, H).fill("#ffffff");
+  doc.rect(0, 0, W, H).fill(bgColor);
 
   const imgBuf = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
 
   const configs = {
     "closing": {
-      title: "Un mensaje para ti",
-      titleColor: "#5b3a8e",
-      accentColor: "#ede9fe",
-      fontSize: 13,
-      lineGap: 7,
-      centered: true
+      title: "Moraleja",
+      fontSize: 14,
+      lineGap: 9,
+      centered: true,
+      italic: true
     },
     "adult-guide": {
-      title: "Guía para quien acompaña",
-      titleColor: "#0e7490",
-      accentColor: "#ecfeff",
-      fontSize: 11.5,
-      lineGap: 5,
-      centered: false
+      title: "Para quien lee este cuento",
+      fontSize: 12,
+      lineGap: 6,
+      centered: false,
+      italic: false
     },
     "ngo": {
       title: "Sobre Proyecto Arena",
-      titleColor: "#15803d",
-      accentColor: "#f0fdf4",
-      fontSize: 11.5,
-      lineGap: 5,
-      centered: false
+      fontSize: 12,
+      lineGap: 7,
+      centered: false,
+      italic: false
     }
   };
 
   const cfg = configs[page.type] || configs["adult-guide"];
 
-  // Fondo suave de cabecera
-  doc.rect(0, 0, W, 52).fill(cfg.accentColor);
-
-  // Título de sección
+  // ── Título de sección ──
+  const titleY = MARGIN + 8;
   doc
     .font("Helvetica-Bold")
-    .fontSize(14)
-    .fillColor(cfg.titleColor)
-    .text(cfg.title, MARGIN, 18, { width: W - MARGIN * 2, align: "center" });
+    .fontSize(17)
+    .fillColor(COLOR_TEXT)
+    .text(cfg.title, MARGIN, titleY, { width: W - MARGIN * 2, align: "center" });
 
   // Línea decorativa bajo título
+  const lineY = titleY + 28;
   doc
-    .moveTo(MARGIN + 30, 46)
-    .lineTo(W - MARGIN - 30, 46)
-    .strokeColor(cfg.titleColor)
-    .lineWidth(0.8)
+    .moveTo(MARGIN + 20, lineY)
+    .lineTo(W - MARGIN - 20, lineY)
+    .strokeColor("#d1d5db")
+    .lineWidth(1)
     .stroke();
 
-  let contentY = 64;
+  let contentY = lineY + 16;
 
-  // Imagen para closing (emocional, con imagen si existe)
+  // ── Imagen para closing (moraleja) ──
   if (imgBuf && page.type === "closing") {
-    const imgH = H * 0.35;
+    const imgH = Math.min(H * 0.38, H - contentY - MARGIN - 80);
     doc.save();
-    doc.roundedRect(MARGIN, contentY, W - MARGIN * 2, imgH, 8).clip();
+    doc.roundedRect(MARGIN, contentY, W - MARGIN * 2, imgH, 10).clip();
     doc.image(imgBuf, MARGIN, contentY, {
       fit: [W - MARGIN * 2, imgH],
       align: "center", valign: "center"
     });
     doc.restore();
-    contentY += imgH + 14;
+    contentY += imgH + 16;
   }
 
-  // Limpiar markdown (**texto**) para el PDF
-  let text = (page.text || "").replace(/\*\*(.*?)\*\*/g, "$1").trim();
+  // ── Texto limpio (sin markdown) en párrafos cortos ──
+  let rawText = (page.text || "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")  // quitar **bold**
+    .replace(/\*(.*?)\*/g, "$1")        // quitar *italic*
+    .replace(/#+ /g, "")                  // quitar ## headings
+    .trim();
 
-  // Texto principal
+  // Párrafos: dividir por salto de línea o por punto + mayúscula
+  const paragraphs = rawText
+    .split(/\n+/)
+    .flatMap(p => p.trim() ? [p.trim()] : [])
+    .filter(p => p.length > 0);
+
+  const textW = W - MARGIN * 2 - 16;
   doc
-    .font(page.type === "closing" ? "Helvetica-Oblique" : "Helvetica")
+    .font(cfg.italic ? "Helvetica-Oblique" : "Helvetica")
     .fontSize(cfg.fontSize)
-    .fillColor(COLOR_TEXT)
-    .text(text, MARGIN + 4, contentY, {
-      width: W - MARGIN * 2 - 8,
+    .fillColor(COLOR_TEXT);
+
+  paragraphs.forEach(para => {
+    if (doc.y > H - MARGIN - 30) return;
+    doc.text(para, MARGIN + 8, contentY, {
+      width: textW,
       align: cfg.centered ? "center" : "left",
-      lineGap: cfg.lineGap
+      lineGap: 3
     });
+    contentY = doc.y + cfg.lineGap;
+    if (contentY > H - MARGIN - 30) return;
+  });
+
+  // ── URL para página ONG ──
+  if (page.type === "ngo") {
+    const urlY = H - MARGIN - 40;
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor("#1e40af")
+      .text("Visítanos en:", MARGIN, urlY, { width: W - MARGIN * 2, align: "center" });
+    doc
+      .font("Helvetica")
+      .fontSize(13)
+      .fillColor("#1e40af")
+      .text("www.proyectoarena.com", MARGIN, urlY + 18, {
+        width: W - MARGIN * 2,
+        align: "center",
+        link: "https://proyectoarena.com"
+      });
+  }
 }
 
 // ============================================================
@@ -429,7 +454,7 @@ function addPageNumber(doc, pageNum) {
       });
 
     } else if (page.type === "index") {
-      await addIndexPage(doc, page);
+      await addIndexPage(doc, page, settings);
       addPageNumber(doc, globalPageNum);
 
     } else if (page.type === "story-cover") {
@@ -441,7 +466,7 @@ function addPageNumber(doc, pageNum) {
       addPageNumber(doc, globalPageNum);
 
     } else if (["closing", "adult-guide", "ngo"].includes(page.type)) {
-      await addTextPage(doc, page);
+      await addTextPage(doc, page, settings);
       addPageNumber(doc, globalPageNum);
 
     } else {
@@ -589,33 +614,42 @@ export async function generateCoverPdf(bookData) {
       valign: "center"
     });
 
-    // Overlay inferior para legibilidad del texto editable
+    // Overlay completo inferior con degradado
     doc
-      .rect(frontX, BLEED + TRIM_H * 0.55, TRIM_W, TRIM_H * 0.45)
-      .fill("rgba(0,0,0,0.45)");
+      .rect(frontX, BLEED + TRIM_H * 0.52, TRIM_W, TRIM_H * 0.48)
+      .fill("rgba(0,0,0,0.50)");
   } else {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
 
-  // Título portada
+  // Calcular altura del título para ajustar el recuadro
+  const titleFontSize = title.length > 50 ? 22 : title.length > 35 ? 25 : 28;
+  const titleBoxW = TRIM_W - 60;
+  const titleBoxX = frontX + 30;
+
+  // Posición vertical del bloque título (en el 62-80% del alto)
+  const titleStartY = BLEED + TRIM_H * 0.60;
+
+  // Título portada — más grande e infantil
   doc
     .font("Helvetica-Bold")
-    .fontSize(28)
+    .fontSize(titleFontSize)
     .fillColor("#ffffff")
-    .text(title, frontX + 20, BLEED + TRIM_H * 0.62, {
-      width: TRIM_W - 40,
+    .text(title, titleBoxX, titleStartY, {
+      width: titleBoxW,
       align: "center",
-      lineGap: 4
+      lineGap: 5
     });
 
   // Subtítulo portada
   if (subtitle) {
+    const subY = doc.y + 8;
     doc
       .font("Helvetica")
-      .fontSize(14)
-      .fillColor("#e5e7eb")
-      .text(subtitle, frontX + 24, BLEED + TRIM_H * 0.76, {
-        width: TRIM_W - 48,
+      .fontSize(13)
+      .fillColor("rgba(255,255,255,0.90)")
+      .text(subtitle, titleBoxX, subY, {
+        width: titleBoxW,
         align: "center",
         lineGap: 3
       });
