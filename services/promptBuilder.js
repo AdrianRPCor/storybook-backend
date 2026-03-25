@@ -100,9 +100,15 @@ Tono profesional y cercano.
 `.trim(),
 
     ngo: `
-Escribe una página informativa breve sobre una ONG que apoya el bienestar infantil.
+Escribe una página para presentar Proyecto Arena, una ONG con sede en Murcia (España) que ayuda a padres y madres con la educación emocional de sus hijos, nutrición y primeros auxilios para niños de 0 a 4 años.
 
-Tono inspirador, no comercial.
+La página debe:
+- Explicar brevemente qué hace Proyecto Arena y su misión
+- Invitar a los padres que leen el libro a unirse como socios o suscribirse gratis en proyectoarena.com
+- Mencionar que como socios reciben consejos semanales personalizados según la edad exacta de su hijo
+- Transmitir que apoyar a Proyecto Arena es ayudar a más familias
+- Tono cálido, cercano, inspirador — nunca comercial ni agresivo
+- Máximo 120 palabras
 `.trim()
   };
 

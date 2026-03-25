@@ -272,19 +272,7 @@ async function addStoryPage(doc, page, settings) {
     .roundedRect(MARGIN, textY, W - MARGIN * 2, textBoxH, 8)
     .fill(textBoxColor);
 
-  // Número de página (esquina superior del recuadro)
-  if (page.pageNumber) {
-    doc
-      .font("Helvetica")
-      .fontSize(8)
-      .fillColor(COLOR_MUTED)
-      .text(`${page.pageNumber}`, W - MARGIN - 18, textY + 6, {
-        width: 14,
-        align: "right"
-      });
-  }
-
-  // Texto del cuento
+  // Texto del cuento (numeración solo abajo centrado via addPageNumber)
   const text = page.text || "";
   doc
     .font("Helvetica")
@@ -298,7 +286,8 @@ async function addStoryPage(doc, page, settings) {
 }
 
 // ============================================================
-//  PÁGINA DE TEXTO (índice, guía adultos, ONG, cierre)
+//  PÁGINA DE TEXTO — diseño editorial limpio
+//  closing / adult-guide / ngo
 // ============================================================
 async function addTextPage(doc, page) {
   doc.addPage({ size: [W, H] });
@@ -306,60 +295,80 @@ async function addTextPage(doc, page) {
 
   const imgBuf = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
 
-  // Cabecera por tipo
-  const headers = {
-    "closing":     { label: "Cierre emocional", color: "#7c3aed", icon: "🌈" },
-    "adult-guide": { label: "Guía para quien acompaña", color: "#0e7490", icon: "📘" },
-    "ngo":         { label: "Sobre la ONG", color: "#15803d", icon: "🤝" }
+  const configs = {
+    "closing": {
+      title: "Un mensaje para ti",
+      titleColor: "#5b3a8e",
+      accentColor: "#ede9fe",
+      fontSize: 13,
+      lineGap: 7,
+      centered: true
+    },
+    "adult-guide": {
+      title: "Guía para quien acompaña",
+      titleColor: "#0e7490",
+      accentColor: "#ecfeff",
+      fontSize: 11.5,
+      lineGap: 5,
+      centered: false
+    },
+    "ngo": {
+      title: "Sobre Proyecto Arena",
+      titleColor: "#15803d",
+      accentColor: "#f0fdf4",
+      fontSize: 11.5,
+      lineGap: 5,
+      centered: false
+    }
   };
 
-  const h = headers[page.type];
+  const cfg = configs[page.type] || configs["adult-guide"];
 
-  if (h) {
-    // Barra de color superior
-    doc.rect(0, 0, W, 8).fill(h.color);
+  // Fondo suave de cabecera
+  doc.rect(0, 0, W, 52).fill(cfg.accentColor);
 
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(15)
-      .fillColor(h.color)
-      .text(h.label, MARGIN, MARGIN + 16, {
-        width: W - MARGIN * 2
-      });
-
-    // Línea decorativa
-    doc
-      .moveTo(MARGIN, MARGIN + 38)
-      .lineTo(W - MARGIN, MARGIN + 38)
-      .strokeColor(h.color + "44")
-      .lineWidth(1)
-      .stroke();
-  }
-
-  const startY = h ? MARGIN + 50 : MARGIN;
-
-  // Imagen si existe (closing puede tenerla)
-  let textStartY = startY;
-  if (imgBuf && page.type === "closing") {
-    const imgH = H * 0.4;
-    doc.image(imgBuf, MARGIN, startY, {
-      width: W - MARGIN * 2,
-      height: imgH,
-      cover: [W - MARGIN * 2, imgH]
-    });
-    textStartY = startY + imgH + 12;
-  }
-
-  // Texto
-  const text = page.text || "";
+  // Título de sección
   doc
-    .font("Helvetica")
-    .fontSize(12)
+    .font("Helvetica-Bold")
+    .fontSize(14)
+    .fillColor(cfg.titleColor)
+    .text(cfg.title, MARGIN, 18, { width: W - MARGIN * 2, align: "center" });
+
+  // Línea decorativa bajo título
+  doc
+    .moveTo(MARGIN + 30, 46)
+    .lineTo(W - MARGIN - 30, 46)
+    .strokeColor(cfg.titleColor)
+    .lineWidth(0.8)
+    .stroke();
+
+  let contentY = 64;
+
+  // Imagen para closing (emocional, con imagen si existe)
+  if (imgBuf && page.type === "closing") {
+    const imgH = H * 0.35;
+    doc.save();
+    doc.roundedRect(MARGIN, contentY, W - MARGIN * 2, imgH, 8).clip();
+    doc.image(imgBuf, MARGIN, contentY, {
+      fit: [W - MARGIN * 2, imgH],
+      align: "center", valign: "center"
+    });
+    doc.restore();
+    contentY += imgH + 14;
+  }
+
+  // Limpiar markdown (**texto**) para el PDF
+  let text = (page.text || "").replace(/\*\*(.*?)\*\*/g, "$1").trim();
+
+  // Texto principal
+  doc
+    .font(page.type === "closing" ? "Helvetica-Oblique" : "Helvetica")
+    .fontSize(cfg.fontSize)
     .fillColor(COLOR_TEXT)
-    .text(text, MARGIN, textStartY, {
-      width: W - MARGIN * 2,
-      align: "left",
-      lineGap: 5
+    .text(text, MARGIN + 4, contentY, {
+      width: W - MARGIN * 2 - 8,
+      align: cfg.centered ? "center" : "left",
+      lineGap: cfg.lineGap
     });
 }
 
@@ -524,16 +533,21 @@ export async function generateCoverPdf(bookData) {
     .roundedRect(backX + 24, BLEED + 24, TRIM_W - 48, 160, 10)
     .fill("rgba(0,0,0,0.45)");
 
-  // Texto contraportada
-  doc
-    .font("Helvetica-Oblique")
-    .fontSize(11)
-    .fillColor("#ffffff")
-    .text(backText, backX + 36, BLEED + 56, {
-      width: TRIM_W - 72,
-      align: "center",
-      lineGap: 4
-    });
+  // Texto contraportada — usar meta o page.backText como fallback
+  const coverPage = (bookData?.pages || []).find(p => p.type === "cover");
+  const effectiveBackText = backText || coverPage?.backText || "";
+
+  if (effectiveBackText) {
+    doc
+      .font("Helvetica-Oblique")
+      .fontSize(11)
+      .fillColor("#ffffff")
+      .text(effectiveBackText, backX + 36, BLEED + 56, {
+        width: TRIM_W - 72,
+        align: "center",
+        lineGap: 4
+      });
+  }
 
   // ============================================================
   // LOMO
