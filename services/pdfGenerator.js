@@ -133,7 +133,7 @@ async function addIndexPage(doc, page) {
       const titleText = match[1].trim();
       const pageNum   = match[2];
 
-      // Título de entrada
+      // Título de entrada — sin ellipsis, el PDF tiene ancho suficiente
       doc
         .font("Helvetica")
         .fontSize(11)
@@ -141,7 +141,7 @@ async function addIndexPage(doc, page) {
         .text(titleText, paddingX, y, {
           width: contentW - 30,
           continued: false,
-          ellipsis: true
+          ellipsis: false
         });
 
       // Número de página (derecha)
@@ -461,7 +461,8 @@ function addPageNumber(doc, pageNum) {
 //  FUNCIÓN: generateCoverPdf (solo portada, ratio extendido)
 // ============================================================
 export async function generateCoverPdf(bookData) {
-  const PAGE_COUNT = 68;
+  // Calcular páginas reales del libro para el grosor del lomo
+  const PAGE_COUNT = (bookData?.pages||[]).filter(p=>p.type!=="blank").length || 68;
   const PAPER_FACTOR = 0.002252;
 
   const BLEED = 0.125 * 72;
@@ -604,6 +605,30 @@ export async function generateCoverPdf(bookData) {
         align: "center",
         lineGap: 3
       });
+  }
+
+  // Logo ONG — en portada frontal (esquina inferior derecha) y en contraportada (inferior centro)
+  const logoUrl = bookData?.meta?.logoUrl || null;
+  if (logoUrl) {
+    const logoBuf = await fetchImageBuffer(logoUrl);
+    if (logoBuf) {
+      const logoH = 40;
+      const logoW = 80;
+
+      // Portada frontal: esquina inferior derecha
+      try {
+        doc.image(logoBuf, frontX + TRIM_W - logoW - 18, BLEED + TRIM_H - logoH - 18, {
+          fit: [logoW, logoH], align: "right", valign: "bottom"
+        });
+      } catch(e) { console.warn("Logo portada:", e.message); }
+
+      // Contraportada: parte inferior centrada
+      try {
+        doc.image(logoBuf, backX + TRIM_W/2 - logoW/2, BLEED + TRIM_H - logoH - 18, {
+          fit: [logoW, logoH], align: "center", valign: "bottom"
+        });
+      } catch(e) { console.warn("Logo contraportada:", e.message); }
+    }
   }
 
   doc.end();
