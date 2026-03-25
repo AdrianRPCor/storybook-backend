@@ -84,14 +84,16 @@ function ensureCharacters() {
 // Clonar bookData sin imágenes base64 (que pueden ser enormes)
 function bookDataForStorage() {
   const clone = JSON.parse(JSON.stringify(bookData));
-  // Mantener URLs remotas (https://...) pero eliminar base64
+  // Eliminar base64 de imágenes grandes de páginas (pueden ser enormes)
+  // Pero MANTENER el logo (es pequeño, ~50KB, y el usuario no quiere subirlo cada vez)
   (clone.pages||[]).forEach(p => {
-    if (p.imageUrl?.startsWith("data:"))    p.imageUrl    = null;
+    if (p.imageUrl?.startsWith("data:"))     p.imageUrl     = null;
     if (p.backImageUrl?.startsWith("data:")) p.backImageUrl = null;
   });
   (clone.characters?.global||[]).forEach(c => {
     if (c.imageUrl?.startsWith("data:")) c.imageUrl = null;
   });
+  // clone.meta.logoUrl se mantiene (base64 pequeño del logo)
   return clone;
 }
 
@@ -128,6 +130,13 @@ function loadProject() {
     if (p.editorState) Object.assign(editorState, p.editorState);
     renderPageList();
     renderStoryList();
+    // Restaurar logo si estaba guardado
+    if (bookData.meta?.logoUrl) {
+      const fn = document.getElementById("sbk-logo-filename");
+      const clr = document.getElementById("sbk-logo-clear");
+      if(fn) fn.textContent = "Logo guardado";
+      if(clr) clr.style.display = "inline-block";
+    }
     if (editorState.currentPageId) selectPage(editorState.currentPageId);
   } catch(e) { console.error("Error cargando proyecto", e); }
 }
@@ -695,6 +704,9 @@ function loadPageControls(page) {
     // Mostrar panel portada, ocultar normal
     if(normalPanel) normalPanel.style.display="none";
     if(coverPanel)  coverPanel.style.display="block";
+    // Grid: spread arriba + controles abajo (columna única)
+    const grid=document.getElementById("sbk-editor-grid");
+    if(grid) grid.classList.add("sbk__editorGrid--cover");
 
     // Rellenar campos portada desde bookData.meta
     const sv=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||""; };
@@ -715,6 +727,9 @@ function loadPageControls(page) {
   // Panel normal para todo lo demás
   if(normalPanel) normalPanel.style.display="block";
   if(coverPanel)  coverPanel.style.display="none";
+  // Grid: volver a layout normal (preview izq + controles der)
+  const grid=document.getElementById("sbk-editor-grid");
+  if(grid) grid.classList.remove("sbk__editorGrid--cover");
 
   const textEditor=document.getElementById("sbk-text-editor");
   const promptEditor=document.getElementById("sbk-prompt-editor");

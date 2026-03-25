@@ -91,17 +91,10 @@
         <label class="sbk__label">Color recuadro de texto
           <input id="sbk-textbox-color" class="sbk__input sbk__color" type="color" value="#f9fafb">
         </label>
-        <div class="sbk__divider"></div>
-        <div class="sbk__cardTitle">Portada</div>
-        <label class="sbk__label">Texto del lomo
-          <input id="sbk-spine-text" class="sbk__input" type="text" placeholder="Igual al título">
-        </label>
-        <label class="sbk__label">Color del lomo
-          <input id="sbk-spine-color" class="sbk__input sbk__color" type="color" value="#1e3a5f">
-        </label>
-        <label class="sbk__label">Texto contraportada
-          <textarea id="sbk-back-cover-text" class="sbk__textarea" rows="4" maxlength="500" placeholder="Texto breve para la contraportada"></textarea>
-        </label>
+        <!-- Campos portada: gestionados desde el editor de portada. Inputs hidden para compatibilidad JS -->
+        <input id="sbk-spine-text" type="hidden">
+        <input id="sbk-spine-color" type="hidden" value="#1e3a5f">
+        <textarea id="sbk-back-cover-text" style="display:none;"></textarea>
       </section>
 
     </div>
@@ -177,8 +170,8 @@
           </div>
 
           <div class="sbk__editorBody">
-            <!-- PREVIEW IZQUIERDA + CONTROLES DERECHA -->
-            <div class="sbk__editorGrid">
+            <!-- LAYOUT: en portada → spread arriba + controles abajo; en resto → preview izq + controles der -->
+            <div class="sbk__editorGrid" id="sbk-editor-grid">
 
               <!-- PREVIEW PÁGINA (fiel al PDF) -->
               <div class="sbk__previewWrap">
