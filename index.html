@@ -132,6 +132,15 @@
 
 /* PROGRESS BAR */
 #sbk-progress{display:none;position:fixed;top:0;left:0;right:0;z-index:9998;height:3px;background:var(--blue);transition:width .3s}
+/* PROGRESS TOAST */
+#sbk-progress-toast{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:14px;padding:14px 20px;min-width:300px;max-width:500px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:9999;flex-direction:column;gap:8px;font-family:inherit}
+#sbk-progress-toast.visible{display:flex}
+#sbk-pt-top{display:flex;justify-content:space-between;align-items:center}
+#sbk-pt-label{font-size:13px;font-weight:700}
+#sbk-pt-pct{font-size:12px;opacity:0.65}
+#sbk-pt-track{background:rgba(255,255,255,0.15);border-radius:999px;height:7px;overflow:hidden}
+#sbk-pt-bar{height:100%;background:#60a5fa;border-radius:999px;width:0%;transition:width 0.35s ease}
+#sbk-pt-detail{font-size:11px;opacity:0.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* RESPONSIVE */
 @media(max-width:1100px){
@@ -148,6 +157,12 @@
 
 <!-- PROGRESS BAR -->
 <div id="sbk-progress"></div>
+<!-- PROGRESS TOAST -->
+<div id="sbk-progress-toast">
+  <div id="sbk-pt-top"><span id="sbk-pt-label"></span><span id="sbk-pt-pct"></span></div>
+  <div id="sbk-pt-track"><div id="sbk-pt-bar"></div></div>
+  <div id="sbk-pt-detail"></div>
+</div>
 <!-- TOAST CONTAINER -->
 <div id="sbk-toast"></div>
 
@@ -444,13 +459,31 @@ function toast(msg, type = "info") {
   setTimeout(() => el.remove(), 3500);
 }
 
-function setProgress(pct) {
+function setProgress(pct, label, detail) {
+  // Barra fina superior
   const bar = document.getElementById("sbk-progress");
-  if (!bar) return;
-  if (pct <= 0) { bar.style.display = "none"; bar.style.width = "0%"; return; }
-  bar.style.display = "block";
-  bar.style.width = pct + "%";
-  if (pct >= 100) setTimeout(() => setProgress(0), 600);
+  if (bar) {
+    if (pct <= 0) { bar.style.display = "none"; bar.style.width = "0%"; }
+    else { bar.style.display = "block"; bar.style.width = pct + "%"; }
+  }
+  // Toast flotante con detalle
+  const toast = document.getElementById("sbk-progress-toast");
+  const ptBar  = document.getElementById("sbk-pt-bar");
+  const ptLbl  = document.getElementById("sbk-pt-label");
+  const ptPct  = document.getElementById("sbk-pt-pct");
+  const ptDtl  = document.getElementById("sbk-pt-detail");
+  if (!toast) return;
+  if (pct <= 0) {
+    toast.classList.remove("visible");
+    setTimeout(() => { if (ptBar) ptBar.style.width = "0%"; }, 400);
+    return;
+  }
+  toast.classList.add("visible");
+  if (ptBar)  ptBar.style.width  = pct + "%";
+  if (ptLbl)  ptLbl.textContent  = label  || "";
+  if (ptPct)  ptPct.textContent  = pct > 0 ? Math.round(pct) + "%" : "";
+  if (ptDtl)  ptDtl.textContent  = detail || "";
+  if (pct >= 100) setTimeout(() => setProgress(0), 800);
 }
 
 function setButtonLoading(btn, loading, originalText) {
@@ -917,12 +950,20 @@ async function generateFullBookTextOnly() {
       const text = await generateTextFromAPI(page);
       if (page.type === "cover") {
         const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-        page.title    = lines[0] || "";
-        page.subtitle = lines[1] || "";
-        page.backText = lines.slice(2).join("\n") || "";
+        // FIX: parsear con prefijos TÍTULO: / SUBTÍTULO: / CONTRAPORTADA:
+        const titleLine    = lines.find(l => /^T[IÍ]TULO\s*:/i.test(l));
+        const subtitleLine = lines.find(l => /^SUBT[IÍ]TULO\s*:/i.test(l));
+        const backIdx      = lines.findIndex(l => /^CONTRAPORTADA\s*:/i.test(l));
+        page.title    = (titleLine    || lines[0] || "").replace(/^T[IÍ]TULO\s*:/i, "").trim();
+        page.subtitle = (subtitleLine || lines[1] || "").replace(/^SUBT[IÍ]TULO\s*:/i, "").trim();
+        page.backText = backIdx >= 0
+          ? lines.slice(backIdx + 1).join("\n").trim()
+          : lines.slice(2).join("\n").trim();
         page.text     = text;
-        bookData.meta.bookTitle    = page.title;
-        bookData.meta.bookSubtitle = page.subtitle;
+        bookData.meta.bookTitle     = page.title;
+        bookData.meta.bookSubtitle  = page.subtitle;
+        bookData.meta.backCoverText = page.backText;
+        console.log("✅ Portada parseada:", { title: page.title, backText: page.backText?.slice(0,60) });
       } else if (page.type === "story-cover") {
         page.title = text.trim();
         page.text  = text.trim();
@@ -932,7 +973,12 @@ async function generateFullBookTextOnly() {
         page.text = text;
       }
       done++;
-      setProgress(Math.round((done / totalPages) * 90));
+      const _lbl = page.type==="cover" ? "Portada del libro" :
+                   page.type==="story-cover" ? "Portada de cuento" :
+                   page.type==="story" ? `Página ${page.pageNumber || done}` :
+                   page.type==="closing" ? "Moraleja" :
+                   page.type==="adult-guide" ? "Guía para adultos" : "Página ONG";
+      setProgress(Math.round((done / totalPages) * 90), "✍️ Generando textos…", _lbl);
     } catch(e) {
       console.error("❌ Error en página:", page.type, e);
       toast(`Error generando página ${page.type}`, "error");
@@ -957,8 +1003,17 @@ async function generateFullBookTextOnly() {
     indexPage.text = lines.join("\n");
   }
 
-  setProgress(100);
+  setProgress(100, "✍️ Textos completados", "Sincronizando…");
   syncSettingsUI();
+  // FIX CRÍTICO: sincronizar backCoverText en meta y rellenar el textarea de portada
+  const _cpFix = bookData.pages.find(p => p.type === "cover");
+  if (_cpFix) {
+    if (!bookData.meta.backCoverText && _cpFix.backText)
+      bookData.meta.backCoverText = _cpFix.backText;
+    // Rellenar el textarea visible del panel de portada
+    const _bte = document.getElementById("sbk-cover-back-edit") || document.getElementById("sbk-back-cover-text");
+    if (_bte && bookData.meta.backCoverText) _bte.value = bookData.meta.backCoverText;
+  }
   renderStoryTitles();
   renderPageList();
   saveProject();
@@ -983,7 +1038,12 @@ async function generateImagesForWholeBook() {
       const url = await generateImageFromAPI(page.imagePrompt, false);
       page.imageUrl = url;
       done++;
-      setProgress(Math.round((done / pagesToProcess.length) * 100));
+      const _imgPct = Math.round((done / pagesToProcess.length) * 100);
+      const _stTitle = page.storyId ? (bookData.stories.find(s=>s.id===page.storyId)?.title || "") : "";
+      const _imgLbl  = page.type==="cover" ? "Portada del libro" :
+                       page.type==="story-cover" ? `Portada: ${_stTitle}` :
+                       `${_stTitle} · pág ${page.pageNumber || done}`;
+      setProgress(_imgPct, "🎨 Generando imágenes…", _imgLbl);
       toast(`🖼️ Imagen ${done}/${pagesToProcess.length} generada`, "info");
     } catch(e) {
       console.error("❌ Error imagen:", e);
@@ -1130,6 +1190,35 @@ async function exportPdfInterior() {
 async function exportPdfCover() {
   const btn = document.getElementById("sbk-export-pdf-cover");
   setButtonLoading(btn, true, "Generando portada...");
+
+  // FIX: garantizar que backCoverText esté sincronizado antes de enviar
+  const _cp = bookData.pages.find(p => p.type === "cover");
+  if (_cp) {
+    // Leer del textarea del panel de portada (fuente más fiable)
+    const _bte = document.getElementById("sbk-cover-back-edit") || document.getElementById("sbk-back-cover-text");
+    if (_bte?.value?.trim()) bookData.meta.backCoverText = _bte.value.trim();
+    // Fallback desde page.backText
+    if (!bookData.meta.backCoverText && _cp.backText)
+      bookData.meta.backCoverText = _cp.backText;
+    // Fallback: parsear del texto bruto
+    if (!bookData.meta.backCoverText && _cp.text) {
+      const _lines = _cp.text.split("\n").map(l => l.trim()).filter(Boolean);
+      const _bi = _lines.findIndex(l => /CONTRAPORTADA\s*:/i.test(l));
+      if (_bi >= 0) bookData.meta.backCoverText = _lines.slice(_bi + 1).join(" ").trim();
+      else if (_lines.length >= 3) bookData.meta.backCoverText = _lines.slice(2).join(" ").trim();
+    }
+    // Garantizar spine
+    if (!bookData.meta.spineText) bookData.meta.spineText = bookData.meta.bookTitle;
+    _cp.backText = bookData.meta.backCoverText;
+    console.log("📤 Exportando portada KDP:", {
+      title: bookData.meta.bookTitle,
+      backText: bookData.meta.backCoverText?.slice(0, 80),
+      hasFrontImg: !!_cp.imageUrl,
+      hasBackImg:  !!_cp.backImageUrl
+    });
+  }
+
+  setProgress(30, "📄 Exportando portada KDP…", "Enviando al servidor…");
   try {
     const res = await fetch(`${API_BASE}/export/pdf/cover`, {
       method:"POST",
@@ -1146,8 +1235,10 @@ async function exportPdfCover() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setProgress(100, "📄 Portada descargada", "");
     toast("🎨 PDF portada descargado", "success");
   } catch(e) {
+    setProgress(0);
     toast("Error generando portada: " + e.message, "error");
   } finally {
     setButtonLoading(btn, false);
