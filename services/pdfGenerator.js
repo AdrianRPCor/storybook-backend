@@ -338,8 +338,10 @@ async function addTextPage(doc, page, settings) {
 //  NÚMERO DE PÁGINA
 // ============================================================
 function addPageNumber(doc, pageNum) {
-  doc.font("Helvetica").fontSize(8).fillColor(COLOR_MUTED)
-     .text(String(pageNum), 0, H - 20, { width: W, align: "center" });
+  doc.font("Helvetica").fontSize(9).fillColor(COLOR_MUTED)
+     .text(String(pageNum), 0, H - MARGIN + 8, {
+       width: W, align: "center", lineBreak: false
+     });
 }
 
 // ============================================================
@@ -440,9 +442,12 @@ export async function generateCoverPdf(bookData) {
   const subtitle  = (bookData?.meta?.bookSubtitle || "").trim();
   const spineText = (bookData?.meta?.spineText    || title).trim();
 
-  // FIX: triple fallback para backCoverText
+  // FIX: cuádruple fallback para backCoverText
   let backText = (bookData?.meta?.backCoverText || "").trim();
   if (!backText) backText = (coverPage?.backText || "").trim();
+  // Si el panel de portada está visible, intentar leer directamente desde el payload
+  // (el frontend ya lo sincroniza antes de enviar, pero por si acaso)
+  if (!backText) backText = (bookData?.pages?.find(p=>p.type==="cover")?.backText || "").trim();
   if (!backText && coverPage?.text) {
     const lines = coverPage.text.split("\n").map(l => l.trim()).filter(Boolean);
     const bi = lines.findIndex(l => /CONTRAPORTADA\s*:/i.test(l));
