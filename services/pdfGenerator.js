@@ -57,8 +57,9 @@ async function addCoverPage(doc, page, settings) {
     doc.circle(W * 0.15, H * 0.7,  60).fill("rgba(255,255,255,0.05)");
   }
 
-  const title    = (settings?.bookTitle    || "").trim();
-  const subtitle = (settings?.bookSubtitle || "").trim();
+  // FIX: leer desde múltiples fuentes porque a veces settings llega sin estos campos
+  const title    = (settings?.bookTitle    || page?.title    || "").trim();
+  const subtitle = (settings?.bookSubtitle || page?.subtitle || "").trim();
 
   if (title) {
     doc
@@ -374,8 +375,8 @@ export async function generatePdf(bookData) {
 
     if (page.type === "cover") {
       await addCoverPage(doc, page, {
-        bookTitle:    bookData?.meta?.bookTitle,
-        bookSubtitle: bookData?.meta?.bookSubtitle,
+        bookTitle:    bookData?.meta?.bookTitle    || page.title    || "",
+        bookSubtitle: bookData?.meta?.bookSubtitle || page.subtitle || "",
         ...settings
       });
     } else if (page.type === "index") {
