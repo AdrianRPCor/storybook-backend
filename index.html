@@ -151,7 +151,32 @@
 @media(max-width:720px){
   #sbk-app .sbk__grid3{grid-template-columns:1fr}
 }
-  </style>
+  
+/* ===================== COVER SPREAD KDP ===================== */
+#sbk-cover-spread{display:none;flex-direction:row;align-items:stretch;box-shadow:0 6px 28px rgba(0,0,0,0.18);border-radius:2px;overflow:hidden;margin:0 auto}
+.sbk__coverZone{position:relative;overflow:hidden;flex-shrink:0}
+.sbk__coverZone--back{width:240px;height:360px;background:#1e3a5f}
+.sbk__coverZone--spine{width:12px;height:360px;background:#152d4a;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sbk__coverZone--front{width:240px;height:360px;background:#1e3a5f}
+.sbk__coverImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.sbk__coverFrontFill{position:absolute;left:0;right:0;top:55%;bottom:0;background:rgba(0,0,0,0.45)}
+.sbk__coverFrontOverlay{position:absolute;left:0;right:0;top:62%;display:flex;flex-direction:column;align-items:center;padding:0 10px}
+.sbk__coverFrontTitle{font-size:14px!important;font-weight:900!important;color:#fff!important;text-align:center;line-height:1.1;margin-bottom:4px;text-shadow:0 1px 6px rgba(0,0,0,0.3)}
+.sbk__coverFrontSubtitle{font-size:8px!important;color:#e5e7eb!important;text-align:center;line-height:1.3}
+.sbk__coverBackFill{position:absolute;inset:0;background:rgba(30,58,95,0.85)}
+.sbk__coverBackTextBox{position:absolute;top:10px;left:10px;right:10px;background:rgba(0,0,0,0.5);border-radius:5px;padding:8px 10px}
+.sbk__coverBackText{font-size:7px!important;line-height:1.5;color:rgba(255,255,255,0.92)!important;font-style:italic;margin:0}
+.sbk__spineText{writing-mode:vertical-rl;transform:rotate(180deg);font-size:6px;font-weight:600;color:rgba(255,255,255,0.85);letter-spacing:0.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:86%;text-align:center}
+.sbk__coverZoneLabel{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:6px;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap}
+.sbk__coverDimsBar{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted);background:#f9fafb;border:1px solid var(--line);border-radius:8px;padding:5px 10px;width:100%;justify-content:center;margin-top:8px}
+.sbk__coverDimsBar b{color:var(--text);font-weight:600}
+/* Panel portada */
+.sbk__coverPanel{display:none}
+.sbk__coverPanel.active{display:block}
+.sbk__coverFieldsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sbk__coverFieldsGrid .sbk__label--full{grid-column:1/-1}
+
+</style>
 </head>
 <body style="background:#f5f7fb">
 
@@ -319,19 +344,89 @@
 
           <div class="sbk__editorBody">
             <div class="sbk__gridEditor">
+              <!-- PÁGINA NORMAL -->
               <div class="sbk__pageMock" id="sbk-page-mock">
                 <div class="sbk__pageInner">
                   <div class="sbk__imgMock" id="sbk-img-mock">Imagen</div>
                   <div class="sbk__pageTextPreview" id="sbk-text-preview"></div>
                 </div>
               </div>
+
+              <!-- SPREAD PORTADA KDP -->
+              <div id="sbk-cover-spread">
+                <!-- Contraportada -->
+                <div class="sbk__coverZone sbk__coverZone--back" id="sbk-cover-back-zone">
+                  <img class="sbk__coverImg" id="sbk-back-img" src="" alt="" style="display:none">
+                  <div class="sbk__coverBackFill" id="sbk-cover-back-fill"></div>
+                  <div class="sbk__coverBackTextBox">
+                    <p class="sbk__coverBackText" id="sbk-cover-back-text-preview">Texto contraportada…</p>
+                  </div>
+                  <span class="sbk__coverZoneLabel">contraportada</span>
+                </div>
+                <!-- Lomo -->
+                <div class="sbk__coverZone sbk__coverZone--spine" id="sbk-cover-spine">
+                  <span class="sbk__spineText" id="sbk-spine-text-preview"></span>
+                </div>
+                <!-- Portada frontal -->
+                <div class="sbk__coverZone sbk__coverZone--front" id="sbk-cover-front-zone">
+                  <img class="sbk__coverImg" id="sbk-front-img" src="" alt="" style="display:none">
+                  <div class="sbk__coverFrontFill"></div>
+                  <div class="sbk__coverFrontOverlay">
+                    <div class="sbk__coverFrontTitle" id="sbk-cover-front-title">Título del libro</div>
+                    <div class="sbk__coverFrontSubtitle" id="sbk-cover-front-subtitle">Subtítulo</div>
+                  </div>
+                  <span class="sbk__coverZoneLabel">portada</span>
+                </div>
+              </div>
+              <!-- Dims bar -->
+              <div class="sbk__coverDimsBar" id="sbk-dims-bar" style="display:none">
+                <span>Spread: <b id="sbk-dim-spread">—</b></span>
+                <span>Lomo: <b id="sbk-dim-spine">—</b></span>
+                <span>Con sangrado: <b id="sbk-dim-bleed">—</b></span>
+              </div>
+
               <div class="sbk__controls">
-                <label class="sbk__label">Texto de la página
-                  <textarea id="sbk-editor-text" class="sbk__textarea" rows="6" placeholder="El texto de esta página aparecerá aquí..."></textarea>
-                </label>
-                <label class="sbk__label">Prompt de imagen
-                  <textarea id="sbk-editor-prompt" class="sbk__textarea" rows="4" placeholder="Describe la ilustración de esta página..."></textarea>
-                </label>
+                <!-- Panel portada -->
+                <div id="sbk-cover-panel" class="sbk__coverPanel">
+                  <div class="sbk__coverFieldsGrid">
+                    <label class="sbk__label">Título del libro
+                      <input class="sbk__input" id="sbk-cover-title-edit" type="text" placeholder="Título emocional del libro">
+                    </label>
+                    <label class="sbk__label">Subtítulo
+                      <input class="sbk__input" id="sbk-cover-subtitle-edit" type="text" placeholder="Subtítulo del libro">
+                    </label>
+                    <label class="sbk__label">Texto del lomo
+                      <input class="sbk__input" id="sbk-cover-spine-edit" type="text" placeholder="Igual al título si vacío">
+                    </label>
+                    <label class="sbk__label">Color del lomo
+                      <input class="sbk__input" id="sbk-cover-spine-color-edit" type="color" value="#1e3a5f" style="padding:2px;height:34px;cursor:pointer">
+                    </label>
+                    <label class="sbk__label sbk__label--full">Texto de contraportada
+                      <textarea class="sbk__textarea" id="sbk-cover-back-edit" rows="3" placeholder="Texto breve para la contraportada…"></textarea>
+                    </label>
+                    <div class="sbk__row sbk__label--full" style="margin-top:4px">
+                      <label class="sbk__label" style="margin:0;flex:1">Prompt imagen portada
+                        <textarea class="sbk__textarea" id="sbk-cover-front-prompt" rows="2" placeholder="Describe la portada…"></textarea>
+                      </label>
+                      <label class="sbk__label" style="margin:0;flex:1">Prompt imagen contraportada
+                        <textarea class="sbk__textarea" id="sbk-cover-back-prompt" rows="2" placeholder="Describe la contraportada…"></textarea>
+                      </label>
+                    </div>
+                    <div class="sbk__row sbk__label--full">
+                      <button class="sbk__btn sbk__btn--primary sbk__btn--small" id="sbk-regen-cover-front">🎨 Imagen portada</button>
+                      <button class="sbk__btn sbk__btn--primary sbk__btn--small" id="sbk-regen-cover-back">🎨 Imagen contraportada</button>
+                    </div>
+                  </div>
+                </div>
+                <!-- Panel normal -->
+                <div id="sbk-normal-panel">
+                  <label class="sbk__label">Texto de la página
+                    <textarea id="sbk-editor-text" class="sbk__textarea" rows="6" placeholder="El texto de esta página aparecerá aquí..."></textarea>
+                  </label>
+                  <label class="sbk__label">Prompt de imagen
+                    <textarea id="sbk-editor-prompt" class="sbk__textarea" rows="4" placeholder="Describe la ilustración de esta página..."></textarea>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -701,20 +796,91 @@ function bindGlobalInputs() {
 // ============================================================
 //  EDITOR — MODO Y UI
 // ============================================================
+const PDF_SPREAD = {
+  PAPER_FACTOR: 0.002252, TRIM_W: 6, TRIM_H: 9, BLEED: 0.125
+};
+
 function setEditorMode(mode) {
-  const pageMock = document.getElementById("sbk-page-mock");
-  const imgMock  = document.getElementById("sbk-img-mock");
+  const pageMock    = document.getElementById("sbk-page-mock");
+  const coverSpread = document.getElementById("sbk-cover-spread");
+  const dimsBar     = document.getElementById("sbk-dims-bar");
+  const coverPanel  = document.getElementById("sbk-cover-panel");
+  const normalPanel = document.getElementById("sbk-normal-panel");
+  const imgMock     = document.getElementById("sbk-img-mock");
   if (!pageMock) return;
   editorState.mode = mode;
-  pageMock.className = `sbk__pageMock sbk__pageMock--${mode}`;
-  const textOnlyModes = ["adult", "ngo", "index"];
-  if (textOnlyModes.includes(mode)) pageMock.classList.add("sbk__pageMock--textOnly");
-  if (mode === "cover") pageMock.style.aspectRatio = "2 / 3";
-  else pageMock.style.aspectRatio = "2 / 3";
-  if (imgMock && !["adult","ngo"].includes(mode)) {
-    const labels = { index:"Índice editorial", closing:"Cierre emocional", parents:"Página para padres", "story-cover":"Portada del cuento", cover:"Portada del libro" };
-    if (!imgMock.style.backgroundImage) imgMock.textContent = labels[mode] || "Imagen";
+
+  const isCover = (mode === "cover");
+
+  // Mostrar/ocultar spread vs pageMock
+  pageMock.style.display    = isCover ? "none"  : "";
+  coverSpread.style.display = isCover ? "flex"  : "none";
+  if (dimsBar) dimsBar.style.display = isCover ? "flex" : "none";
+
+  // Mostrar panel portada vs panel normal
+  if (coverPanel)  coverPanel.classList.toggle("active", isCover);
+  if (normalPanel) normalPanel.style.display = isCover ? "none" : "";
+
+  if (!isCover) {
+    pageMock.className = `sbk__pageMock sbk__pageMock--${mode}`;
+    const textOnlyModes = ["adult", "ngo", "index"];
+    if (textOnlyModes.includes(mode)) pageMock.classList.add("sbk__pageMock--textOnly");
+    if (imgMock && !["adult","ngo"].includes(mode)) {
+      const labels = { index:"Índice editorial", closing:"Cierre emocional", parents:"Página para padres", "story-cover":"Portada del cuento" };
+      if (!imgMock.style.backgroundImage) imgMock.textContent = labels[mode] || "Imagen";
+    }
   }
+}
+
+function renderCoverSpread(page) {
+  const title     = bookData.meta.bookTitle    || page?.title    || "Título del libro";
+  const subtitle  = bookData.meta.bookSubtitle || page?.subtitle || "";
+  const backText  = bookData.meta.backCoverText || page?.backText || "Texto de contraportada…";
+  const spineText = bookData.meta.spineText    || title;
+  const spineColor= bookData.settings?.spineColor || "#1e3a5f";
+
+  const s = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  s("sbk-cover-front-title",       title);
+  s("sbk-cover-front-subtitle",    subtitle);
+  s("sbk-cover-back-text-preview", backText);
+  s("sbk-spine-text-preview",      spineText);
+
+  const spineEl = document.getElementById("sbk-cover-spine");
+  if (spineEl) spineEl.style.background = spineColor;
+
+  // Dimensiones lomo
+  const realPageCount = bookData.pages.length || 68;
+  const spineIn  = realPageCount * PDF_SPREAD.PAPER_FACTOR;
+  const spinePx  = Math.max(10, Math.round(spineIn * 40)); // 40px/pulgada en este preview
+  if (spineEl) spineEl.style.width = spinePx + "px";
+
+  const totalIn = PDF_SPREAD.TRIM_W * 2 + spineIn;
+  const bleedW  = totalIn + PDF_SPREAD.BLEED * 2;
+  const bleedH  = PDF_SPREAD.TRIM_H + PDF_SPREAD.BLEED * 2;
+  const sd = (id,v) => { const el=document.getElementById(id); if(el) el.innerHTML=v; };
+  sd("sbk-dim-spread", `${totalIn.toFixed(3)}&quot; × 9&quot;`);
+  sd("sbk-dim-spine",  `${spineIn.toFixed(3)}&quot;`);
+  sd("sbk-dim-bleed",  `${bleedW.toFixed(2)}&quot; × ${bleedH.toFixed(2)}&quot;`);
+
+  // Imágenes
+  const frontImg = document.getElementById("sbk-front-img");
+  const backImg  = document.getElementById("sbk-back-img");
+  if (frontImg) { if(page?.imageUrl){ frontImg.src=page.imageUrl; frontImg.style.display="block"; } else frontImg.style.display="none"; }
+  if (backImg)  { if(page?.backImageUrl){ backImg.src=page.backImageUrl; backImg.style.display="block"; } else backImg.style.display="none"; }
+
+  const backFill = document.getElementById("sbk-cover-back-fill");
+  if (backFill) backFill.style.background = page?.backImageUrl ? "transparent" : "rgba(30,58,95,0.85)";
+
+  // Rellenar campos del panel de portada
+  const sv = (id,v) => { const el=document.getElementById(id); if(el) el.value=v||""};
+  sv("sbk-cover-title-edit",    title);
+  sv("sbk-cover-subtitle-edit", subtitle);
+  sv("sbk-cover-back-edit",     backText === "Texto de contraportada…" ? "" : backText);
+  sv("sbk-cover-spine-edit",    spineText === title ? "" : spineText);
+  sv("sbk-cover-front-prompt",  page?.imagePrompt || "");
+  sv("sbk-cover-back-prompt",   page?.backImagePrompt || "");
+  const scEl = document.getElementById("sbk-cover-spine-color-edit");
+  if (scEl) scEl.value = spineColor;
 }
 
 function loadPageIntoEditor(page) {
@@ -733,6 +899,7 @@ function loadPageIntoEditor(page) {
   if (textArea) {
     if (page.type === "cover") {
       textArea.value = `TÍTULO: ${page.title || ""}\nSUBTÍTULO: ${page.subtitle || ""}\n\nCONTRAPORTADA:\n${page.backText || ""}`;
+      renderCoverSpread(page);
     } else {
       textArea.value = page.text || "";
     }
@@ -754,9 +921,7 @@ function loadPageIntoEditor(page) {
   if (textPreview) {
     textPreview.innerHTML = "";
     if (page.type === "cover") {
-      textPreview.innerHTML = `
-        <div class="sbk__coverPreviewTitle">${esc(page.title || "")}</div>
-        <div class="sbk__coverPreviewSubtitle">${esc(page.subtitle || "")}</div>`;
+      textPreview.innerHTML = ""; // El spread KDP se gestiona en renderCoverSpread
     } else if (page.type === "index") {
       renderIndexPreview(textPreview, page.text || "");
     } else {
@@ -777,6 +942,96 @@ function loadPageIntoEditor(page) {
       imgMock.textContent = labels[page.type] || "Imagen";
     }
   }
+}
+
+
+// ============================================================
+//  BINDINGS PANEL PORTADA (cover spread)
+// ============================================================
+function bindCoverPanel() {
+  const cb = (id, fn) => { const el=document.getElementById(id); if(el) el.addEventListener("input",fn); };
+
+  cb("sbk-cover-title-edit", e => {
+    bookData.meta.bookTitle = e.target.value;
+    const el = document.getElementById("sbk-cover-front-title");
+    if (el) el.textContent = e.target.value;
+    saveProject();
+  });
+  cb("sbk-cover-subtitle-edit", e => {
+    bookData.meta.bookSubtitle = e.target.value;
+    const el = document.getElementById("sbk-cover-front-subtitle");
+    if (el) el.textContent = e.target.value;
+    saveProject();
+  });
+  cb("sbk-cover-back-edit", e => {
+    bookData.meta.backCoverText = e.target.value;
+    const el = document.getElementById("sbk-cover-back-text-preview");
+    if (el) el.textContent = e.target.value;
+    const cp = bookData.pages.find(p => p.type==="cover");
+    if (cp) cp.backText = e.target.value;
+    saveProject();
+  });
+  cb("sbk-cover-spine-edit", e => {
+    bookData.meta.spineText = e.target.value;
+    const el = document.getElementById("sbk-spine-text-preview");
+    if (el) el.textContent = e.target.value || bookData.meta.bookTitle;
+    saveProject();
+  });
+  cb("sbk-cover-spine-color-edit", e => {
+    if (!bookData.settings) bookData.settings = {};
+    bookData.settings.spineColor = e.target.value;
+    const el = document.getElementById("sbk-cover-spine");
+    if (el) el.style.background = e.target.value;
+    saveProject();
+  });
+  cb("sbk-cover-front-prompt", e => {
+    const cp = bookData.pages.find(p => p.type==="cover");
+    if (cp) cp.imagePrompt = e.target.value;
+    saveProject();
+  });
+  cb("sbk-cover-back-prompt", e => {
+    const cp = bookData.pages.find(p => p.type==="cover");
+    if (cp) cp.backImagePrompt = e.target.value;
+    saveProject();
+  });
+
+  // Regenerar imagen portada frontal
+  document.getElementById("sbk-regen-cover-front")?.addEventListener("click", async () => {
+    const cp = bookData.pages.find(p => p.type==="cover"); if(!cp) return;
+    if (!cp.imagePrompt) {
+      const chars=(bookData.characters?.global||[]).map(c=>`${c.name}: ${c.description}`).join(". ");
+      cp.imagePrompt = `Children's book FRONT COVER illustration. Vertical 6x9. Theme: ${bookData.meta.bookTitle}. Characters: ${chars||"infantile"}. NO TEXT.`;
+      document.getElementById("sbk-cover-front-prompt").value = cp.imagePrompt;
+    }
+    try {
+      const url = await generateImageFromAPI(cp.imagePrompt, false);
+      cp.imageUrl = url;
+      const frontImg = document.getElementById("sbk-front-img");
+      if (frontImg) { frontImg.src=url; frontImg.style.display="block"; }
+      saveProject();
+      toast("🎨 Imagen portada generada", "success");
+    } catch(e) { toast("Error: " + e.message, "error"); }
+  });
+
+  // Regenerar imagen contraportada
+  document.getElementById("sbk-regen-cover-back")?.addEventListener("click", async () => {
+    const cp = bookData.pages.find(p => p.type==="cover"); if(!cp) return;
+    if (!cp.backImagePrompt) {
+      const chars=(bookData.characters?.global||[]).map(c=>`${c.name}: ${c.description}`).join(". ");
+      cp.backImagePrompt = `Children's book BACK COVER illustration. Vertical 6x9. Top 40% clear for text. Characters smiling. Theme: ${bookData.meta.bookTitle}. NO TEXT.`;
+      document.getElementById("sbk-cover-back-prompt").value = cp.backImagePrompt;
+    }
+    try {
+      const url = await generateImageFromAPI(cp.backImagePrompt, false);
+      cp.backImageUrl = url;
+      const backImg = document.getElementById("sbk-back-img");
+      if (backImg) { backImg.src=url; backImg.style.display="block"; }
+      const backFill = document.getElementById("sbk-cover-back-fill");
+      if (backFill) backFill.style.background = "transparent";
+      saveProject();
+      toast("🎨 Imagen contraportada generada", "success");
+    } catch(e) { toast("Error: " + e.message, "error"); }
+  });
 }
 
 function renderIndexPreview(container, text) {
@@ -906,7 +1161,7 @@ function generateBookStructure() {
   let order = 0;
 
   // Portada
-  bookData.pages.push({ id:uid(), type:"cover", title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, order:order++ });
+  bookData.pages.push({ id:uid(), type:"cover", title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, backImagePrompt:"", backImageUrl:null, order:order++ });
   bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
   bookData.pages.push({ id:uid(), type:"index", text:"", imagePrompt:"", imageUrl:null, order:order++ });
   bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
@@ -1428,6 +1683,7 @@ document.addEventListener("DOMContentLoaded", function() {
     updateChars();
   }
 
+  bindCoverPanel();
   console.log("✅ Storybook KDP Editor v2.0 — Genspark AI — Listo");
   console.log("📡 API:", API_BASE);
 });
