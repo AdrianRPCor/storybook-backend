@@ -1087,14 +1087,69 @@ function bindImport(){
 async function exportPDF(type){
   const endpoint=type==="cover" ? "/export/pdf/cover" : "/export/pdf";
   const filename =type==="cover" ? "portada.pdf" : "libro.pdf";
-  if(type==="cover"){ const cp=bookData.pages.find(p=>p.type==="cover"); if(!cp){ alert("No hay portada generada"); return; } }
+
+  // ── FIX: garantizar que meta esté completamente sincronizado
+  // antes de enviar. Leer de los campos del panel de portada si existen.
+  const cp = bookData.pages.find(p=>p.type==="cover");
+
+  if(type==="cover"){
+    if(!cp){ alert("No hay portada generada. Genera el libro primero."); return; }
+
+    // Leer campos del panel de portada (fuente de verdad más fiable)
+    const titleEl    = document.getElementById("sbk-cover-title-edit")    || document.getElementById("sbk-book-title");
+    const subtitleEl = document.getElementById("sbk-cover-subtitle-edit") || document.getElementById("sbk-book-subtitle");
+    const backEl     = document.getElementById("sbk-cover-back-edit")     || document.getElementById("sbk-back-cover-text");
+    const spineEl    = document.getElementById("sbk-cover-spine-edit")    || document.getElementById("sbk-spine-text");
+
+    if(titleEl?.value)    bookData.meta.bookTitle    = titleEl.value.trim();
+    if(subtitleEl?.value) bookData.meta.bookSubtitle = subtitleEl.value.trim();
+    if(backEl?.value)     bookData.meta.backCoverText= backEl.value.trim();
+    if(spineEl?.value)    bookData.meta.spineText    = spineEl.value.trim();
+
+    // Si backCoverText sigue vacío, intentar sacarlo de page.backText
+    if(!bookData.meta.backCoverText && cp.backText) {
+      bookData.meta.backCoverText = cp.backText;
+    }
+    // Si sigue vacío, intentar parsear del page.text
+    if(!bookData.meta.backCoverText && cp.text) {
+      const lines = cp.text.split("\n").map(l=>l.trim()).filter(Boolean);
+      const bi = lines.findIndex(l=>/CONTRAPORTADA\s*:/i.test(l));
+      if(bi>=0) bookData.meta.backCoverText = lines.slice(bi+1).join(" ").trim();
+      else if(lines.length>=3) bookData.meta.backCoverText = lines.slice(2).join(" ").trim();
+    }
+
+    // Spine fallback
+    if(!bookData.meta.spineText) bookData.meta.spineText = bookData.meta.bookTitle;
+
+    // Garantizar que page también tenga backText sincronizado
+    cp.backText = bookData.meta.backCoverText;
+
+    console.log("📤 Exportando portada:", {
+      title:    bookData.meta.bookTitle,
+      subtitle: bookData.meta.bookSubtitle,
+      backText: bookData.meta.backCoverText?.slice(0,60),
+      spine:    bookData.meta.spineText,
+      hasFrontImg: !!cp.imageUrl,
+      hasBackImg:  !!cp.backImageUrl,
+    });
+  }
+
   try {
-    const res=await fetch(`${API_BASE}${endpoint}`,{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(bookData) });
-    if(!res.ok) throw new Error(await res.text());
+    const res=await fetch(`${API_BASE}${endpoint}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(bookData)
+    });
+    if(!res.ok){
+      const errText = await res.text();
+      console.error("Error backend:", errText);
+      throw new Error(errText);
+    }
     const blob=await res.blob();
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  } catch(e){ console.error(e); alert(`Error exportando ${filename}`); }
+    saveProject(); // guardar el estado sincronizado
+  } catch(e){ console.error(e); alert(`Error exportando ${filename}: ${e.message}`); }
 }
 
 /* ===================== CEREBRO IA ===================== */
