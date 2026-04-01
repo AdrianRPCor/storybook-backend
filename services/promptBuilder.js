@@ -1,13 +1,11 @@
+// services/promptBuilder.js
+
 export function buildPrompt({
   brain,
   context,
   maxWords,
   styleHints
 }) {
-
-  // =========================
-  // 🔒 DESESTRUCTURACIÓN SEGURA
-  // =========================
 
   const {
     pageType,
@@ -26,34 +24,53 @@ export function buildPrompt({
   } = context || {};
 
   // =========================
-  // 🧑‍🤝‍🧑 PERSONAJES
+  // PERSONAJES — descripción técnica completa para consistencia visual
   // =========================
+  // Si el personaje tiene descripción técnica de prompt (promptDescription),
+  // se usa esa. Si no, se usa la descripción normal.
+  // El objetivo es que el bloque de personajes sea lo suficientemente
+  // específico para que la IA genere el texto siempre refiriéndose
+  // al mismo personaje con los mismos rasgos.
 
   const chars = Array.isArray(characters) && characters.length
-    ? characters.map(c =>
-        `- ${c?.name || "Personaje"}: ${c?.description || ""}`
-      ).join("\n")
-    : "- Usa solo los personajes necesarios y mantenlos coherentes.";
+    ? characters.map(c => {
+        const desc = c?.promptDescription || c?.description || "";
+        return `- ${c?.name || "Personaje"}: ${desc}`;
+      }).join("\n")
+    : "- Usa solo los personajes necesarios y mantenlos coherentes entre páginas.";
 
   // =========================
-  // 🧠 INSTRUCCIONES POR TIPO
+  // BLOQUE PARA PROMPTS DE IMAGEN — se incluye en story para máxima consistencia
+  // =========================
+  const charPromptBlock = Array.isArray(characters) && characters.length
+    ? characters.map(c => {
+        const desc = c?.promptDescription || c?.description || "";
+        return `${c?.name || "Personaje"}: ${desc}`;
+      }).join(". ")
+    : "";
+
+  // =========================
+  // INSTRUCCIONES POR TIPO
   // =========================
 
   const instructionByType = {
 
     cover: `
-Escribe:
-1) TÍTULO (máximo 8 palabras)
-2) SUBTÍTULO (máximo 12 palabras)
-3) Texto breve de contraportada (máximo 80 palabras)
+Escribe en este formato EXACTO (usa estos prefijos literalmente):
+TÍTULO: [máximo 8 palabras, emocional y atractivo]
+SUBTÍTULO: [máximo 12 palabras, enfocado al beneficio emocional]
+CONTRAPORTADA: [máximo 80 palabras, texto que va en la contraportada del libro]
 
-Debe reflejar las temáticas del libro y ser emocional.
+Debe reflejar las temáticas del libro.
+El texto de CONTRAPORTADA debe ser en segunda persona del singular (dirigido al lector adulto),
+cálido, que invite a leer el libro. Sin comillas ni signos extraños.
 `.trim(),
 
     "story-cover": `
-Escribe SOLO el título del cuento "${storyTitle || "Cuento"}".
+Escribe SOLO el título del cuento.
 Máximo 8 palabras.
 Debe reflejar la enseñanza: ${lesson || "emocional"}.
+Sin puntos finales. Sin comillas.
 `.trim(),
 
     index: `
@@ -74,9 +91,15 @@ No inventes títulos nuevos.
     story: `
 Continúa el cuento "${storyTitle || "Historia"}".
 
-Reglas:
-- No reinicies la historia.
-- No repitas información.
+REGLAS ESTRICTAS DE FORMATO:
+- Escribe cada frase o idea en UNA línea separada (salto de línea entre cada frase).
+- Máximo 2-3 frases por párrafo.
+- Deja una línea en blanco entre párrafos.
+- Frases cortas, claras, fáciles de leer en voz alta.
+- No uses puntos y seguido para unir muchas ideas en una frase larga.
+
+REGLAS NARRATIVAS:
+- No reinicies la historia ni repitas lo anterior.
 - Avanza la narrativa.
 - Objetivo de esta página: ${nextPageGoal || "Desarrollo narrativo"}
 
@@ -86,42 +109,50 @@ Texto anterior:
 
     closing: `
 Escribe una página final emocional para cerrar todo el libro.
-Debe transmitir seguridad, crecimiento y calma.
-No repitas cuentos.
+
+FORMATO:
+- Párrafos cortos (2-3 frases cada uno).
+- Separa los párrafos con una línea en blanco.
+- Frases cálidas, positivas, que transmitan seguridad y crecimiento.
+- No repitas los cuentos ni resumos.
+- Segunda persona del singular ("tú/te"), dirigido al niño.
 `.trim(),
 
     "adult-guide": `
-Escribe una guía clara para adultos:
-- Qué emociones trabaja el libro
-- Por qué son importantes
-- 3 consejos prácticos
+Escribe una guía para adultos.
 
-Tono profesional y cercano.
+ESTRUCTURA (usa exactamente estos bloques):
+1. Qué emociones trabaja este libro y por qué son importantes (2-3 frases).
+2. Cómo acompañar al niño mientras lee (2-3 frases).
+3. Tres consejos prácticos numerados (1. / 2. / 3.) — uno por línea.
+
+FORMATO:
+- Párrafos separados por línea en blanco.
+- Tono cercano, empático, en segunda persona del singular.
+- Sin juzgar. Sin tecnicismos.
 `.trim(),
 
     ngo: `
-Escribe una página para presentar Proyecto Arena, una ONG con sede en Murcia (España) que ayuda a padres y madres con la educación emocional de sus hijos, nutrición y primeros auxilios para niños de 0 a 4 años.
+Escribe una página para presentar Proyecto Arena, una ONG de Murcia (España)
+que ayuda a padres en educación emocional, nutrición y primeros auxilios para niños de 0 a 4 años.
 
-La página debe:
-- Explicar brevemente qué hace Proyecto Arena y su misión
-- Invitar a los padres que leen el libro a unirse como socios o suscribirse gratis en proyectoarena.com
-- Mencionar que como socios reciben consejos semanales personalizados según la edad exacta de su hijo
-- Transmitir que apoyar a Proyecto Arena es ayudar a más familias
-- Tono cálido, cercano, inspirador — nunca comercial ni agresivo
-- Máximo 120 palabras
+ESTRUCTURA:
+- Párrafo 1 (3-4 frases): qué hace Proyecto Arena y su misión.
+- Párrafo 2 (2-3 frases): invitación a unirse como socio o suscribirse gratis en proyectoarena.com,
+  mencionando que recibirán consejos según la edad exacta del hijo.
+- Párrafo 3 (2 frases): cierre inspirador sobre ayudar a más familias.
+
+FORMATO:
+- Párrafos separados por línea en blanco.
+- Tono cálido, cercano, nunca comercial.
+- Máximo 120 palabras en total.
 `.trim()
   };
 
-  // =========================
-  // 🧱 INSTRUCCIÓN FINAL SEGURA
-  // =========================
-
-  const instruction =
-    instructionByType[pageType] ||
-    instructionByType["story"];
+  const instruction = instructionByType[pageType] || instructionByType["story"];
 
   // =========================
-  // 🧾 PROMPT FINAL
+  // PROMPT FINAL
   // =========================
 
   return `
@@ -132,7 +163,7 @@ Edad objetivo: ${ageTarget || "infantil"}
 Libro: ${bookTitle || ""}
 Subtítulo: ${bookSubtitle || ""}
 
-Personajes globales:
+PERSONAJES (mantén SIEMPRE estos rasgos exactos en el texto):
 ${chars}
 
 TIPO DE PÁGINA: ${pageType || "story"}
@@ -143,9 +174,10 @@ ${instruction}
 ESTILO:
 ${styleHints || ""}
 
-REGLAS:
+REGLAS FINALES:
 - Máximo ${maxWords || 120} palabras.
-- Devuelve SOLO el texto final.
-- Sin explicaciones.
+- Devuelve SOLO el texto final. Sin títulos, sin explicaciones, sin comillas alrededor.
+- Nunca uses markdown (**negrita**, *cursiva*, ## títulos).
+- Cada frase en su propia línea cuando el tipo sea "story".
 `.trim();
 }
