@@ -198,7 +198,8 @@ async function addStoryPage(doc, page, settings) {
 
   const textBoxColor = settings?.textBoxColor || "#f9fafb";
   const textY    = imgH + 6;
-  const textBoxH = H - textY - MARGIN;
+  // Reservar 28pt al final para el número de página
+  const textBoxH = H - textY - MARGIN - 28;
 
   doc.roundedRect(MARGIN, textY, W - MARGIN * 2, textBoxH, 10).fill(textBoxColor);
 
@@ -217,7 +218,7 @@ async function addStoryPage(doc, page, settings) {
   let curY = textY + 12;
   const textW   = W - MARGIN * 2 - 28;
   // Tope máximo: dejar 22pt para el número de página
-  const maxTextY = H - MARGIN - 22;
+  const maxTextY = H - MARGIN - 50; // dejar espacio para número de página
 
   const storyFontSize = 11.5; // reducido para caber más texto en el recuadro
   doc.font("Helvetica").fontSize(storyFontSize).fillColor(COLOR_TEXT);
@@ -361,20 +362,20 @@ async function addTextPage(doc, page, settings) {
 //  NÚMERO DE PÁGINA
 // ============================================================
 function addPageNumber(doc, pageNum) {
-  // PDFKit: save/restore NO restaura el cursor de texto.
-  // Solución: mover manualmente el cursor al pie ANTES de llamar text()
-  // y luego dejarlo donde estaba (no importa, la página ya está hecha).
-  // Usamos moveDown(0) + y explícito para forzar posición absoluta.
+  // Dibujar número de página con posición ABSOLUTA usando graphics layer
+  // para no interferir con el flujo de texto de la página.
+  // Posición: centro horizontal, Y=H-18 (dentro del sangrado inferior)
+  doc.save();
   doc.font("Helvetica").fontSize(9).fillColor(COLOR_MUTED);
-  // Calcular Y del pie: H - 20pt (dentro del margen inferior)
-  const pageNumY = H - 24;
-  doc.text(String(pageNum), 0, pageNumY, {
+  // Forzar posición: resetear cursor y usar coordenadas absolutas
+  doc.page.margins = { top:0, bottom:0, left:0, right:0 };
+  doc.text(String(pageNum), 0, H - 20, {
     width: W,
     align: "center",
-    lineBreak: false
+    lineBreak: false,
+    baseline: "alphabetic"
   });
-  // Restaurar color para lo que venga después
-  doc.fillColor("#000000");
+  doc.restore();
 }
 
 // ============================================================
@@ -400,9 +401,31 @@ export async function generatePdf(bookData) {
   const settings = bookData?.settings || {};
   let globalPageNum = 0;
 
+  // Determinar qué blanks son válidos:
+  // Solo el que va tras la portada (order=1) y el final del libro
+  const validBlanks = new Set();
+  const sortedPages = [...pages].sort((a,b) => a.order - b.order);
+  sortedPages.forEach((p, i) => {
+    if (p.type === "blank") {
+      const prev = sortedPages[i-1];
+      const next = sortedPages[i+1];
+      // Blank válido: tras portada del libro O al final (último elemento)
+      if (prev?.type === "cover" || !next) {
+        validBlanks.add(p.id);
+      }
+      // Blank válido también: tras el índice (por si hay alguno)
+      if (prev?.type === "index") {
+        validBlanks.add(p.id);
+      }
+    }
+  });
+
   for (const page of pages) {
     if (page.type === "blank") {
-      addBlankPage(doc, page.color || settings.blankPageColor || "#ffffff");
+      if (validBlanks.has(page.id)) {
+        addBlankPage(doc, page.color || settings.blankPageColor || "#ffffff");
+      }
+      // Ignorar blanks que no son portada ni final
       continue;
     }
 
