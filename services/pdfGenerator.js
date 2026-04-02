@@ -249,6 +249,7 @@ async function addStoryPage(doc, page, settings) {
   // FIX: dividir primero por saltos de línea, y si viene en bloque
   // dividir por punto + espacio + mayúscula para lectura en voz alta
   const rawText = (page.text || "").trim();
+  if (!rawText) { console.warn("⚠️ Página sin texto:", page.type, page.id); }
   const textW      = W - MARGIN * 2 - 28;
   const maxTextY   = H - MARGIN - 40; // tope superior al número de página
   const storyFontSize = 11.5;
@@ -319,9 +320,45 @@ async function addTextPage(doc, page, settings) {
   const bgColor = settings?.blankPageColor || "#ffffff";
   doc.addPage({ size: [W, H] });
 
-  // ── MORALEJA: idéntica a una página de cuento normal ──
+  // ── MORALEJA: imagen grande (75%) + 1 párrafo centrado ──
   if (page.type === "closing") {
-    await addStoryPage(doc, page, settings);
+    doc.rect(0, 0, W, H).fill(settings?.blankPageColor || "#ffffff");
+    const imgBuf   = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
+    const imgAreaH = H * 0.75;
+    const textAreaH = H - imgAreaH;
+
+    if (imgBuf) {
+      doc.save();
+      doc.rect(0, 0, W, imgAreaH).clip();
+      doc.image(imgBuf, 0, 0, { cover: [W, imgAreaH], align: "center", valign: "center" });
+      doc.restore();
+    } else {
+      doc.roundedRect(MARGIN, MARGIN, W - MARGIN*2, imgAreaH - MARGIN, 12).fill("#eef2f7");
+    }
+
+    // Recuadro de texto igual que story
+    const textBoxColor = settings?.textBoxColor || "#f9fafb";
+    const textY = imgAreaH + 6;
+    const textBoxH = H - textY - MARGIN - 18;
+    doc.roundedRect(MARGIN, textY, W - MARGIN*2, textBoxH, 10).fill(textBoxColor);
+
+    // 1 párrafo centrado (máx 3 líneas)
+    let morText = (page.text || "")
+      .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+      .replace(/#+ /g, "").replace(/^[-•]\s*/gm, "").trim();
+    // Tomar solo el primer párrafo
+    morText = morText.split(/\n{2,}/)[0].replace(/\n/g, " ").trim();
+
+    const mTextW = W - MARGIN*2 - 28;
+    doc.font("Helvetica-Oblique").fontSize(11.5).fillColor(COLOR_TEXT);
+    const mTextH = doc.heightOfString(morText, { width: mTextW });
+    const mAvailH = textBoxH - 24;
+    const mTopPad = Math.max(0, (mAvailH - mTextH) / 2);
+    doc.text(morText, MARGIN + 14, textY + 12 + mTopPad, {
+      width: mTextW, align: "center", lineGap: 3
+    });
+
+    addPageNumber(doc, 0); // sin número en moraleja (pasamos 0)
     return;
   }
 
@@ -349,7 +386,7 @@ async function addTextPage(doc, page, settings) {
 
   const paragraphs = rawText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 0);
   const textW2 = W - MARGIN * 2 - 16;
-  const bottomReserve = page.type === "ngo" ? 70 : MARGIN;
+  const bottomReserve = MARGIN;
 
   doc.font("Helvetica").fontSize(cfg.fontSize).fillColor(COLOR_TEXT);
   for (const para of paragraphs) {
@@ -358,16 +395,13 @@ async function addTextPage(doc, page, settings) {
     contentY = doc.y + cfg.lineGap;
   }
 
-  // NGO: al pie, solo la URL como texto discreto (sin banda)
-  if (page.type === "ngo" && contentY < H - MARGIN - 20) {
-    doc.font("Helvetica").fontSize(10).fillColor(COLOR_MUTED)
-       .text("proyectoarena.com", MARGIN, H - MARGIN - 14, { width: W - MARGIN * 2, align: "center" });
-  }
+  // NGO: sin URL al pie — el texto generado ya menciona el sitio web
 }
 // ============================================================
 //  NÚMERO DE PÁGINA
 // ============================================================
 function addPageNumber(doc, pageNum) {
+  if (!pageNum) return; // 0 o null = sin número
   // Dibujar número de página con posición ABSOLUTA usando graphics layer
   // para no interferir con el flujo de texto de la página.
   // Posición: centro horizontal, Y=H-18 (dentro del sangrado inferior)
