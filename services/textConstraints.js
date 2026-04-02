@@ -16,7 +16,7 @@ export function getMaxWords({ pageType, ageTarget, pagesPerStory }) {
     cover:          150,   // TÍTULO + SUBTÍTULO + CONTRAPORTADA
     "story-cover":    8,   // Solo título corto
     index:          100,   // Lista de índice
-    story:           75,   // CALIBRADO: 72% del espacio real del PDF (104 palabras máx)
+    story:           60,   // CALIBRADO: frases unidas en párrafo = ~10 líneas × 6 palabras/línea
     closing:        130,   // Página entera sin imagen
     "adult-guide":  180,   // Página entera sin imagen
     ngo:            120,   // Página entera sin imagen
@@ -36,8 +36,8 @@ export function getStyleHints({ pageType, ageTarget }) {
   }
   if (pageType === "story") {
     return ageTarget?.includes("3")
-      ? "Frases MUY cortas (3-6 palabras). Una idea por frase. Vocabulario muy simple."
-      : "Frases cortas (5-10 palabras). Una escena por página. Texto que cabe en un recuadro pequeño de libro impreso.";
+      ? "IMPORTANTE: escribe TODO el texto en UN SOLO PÁRRAFO CONTINUO, sin saltos de línea. Frases muy cortas unidas con punto y seguido. Vocabulario muy simple. Máximo 45 palabras."
+      : "IMPORTANTE: escribe TODO el texto en UN SOLO PÁRRAFO CONTINUO, sin saltos de línea entre frases. Usa punto y seguido entre frases, NO saltos de línea. Una escena por página. Máximo 60 palabras.";
   }
   if (pageType === "adult-guide") {
     return "Claro, práctico, empático. Sin juzgar. Consejos accionables en párrafos cortos.";
