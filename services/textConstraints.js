@@ -17,7 +17,7 @@ export function getMaxWords({ pageType, ageTarget, pagesPerStory }) {
     "story-cover":    8,   // Solo título corto
     index:          100,   // Lista de índice
     story:           60,   // 3 párrafos × ~2-3 líneas × ~9 palabras/línea = ~55 palabras
-    closing:        130,   // Página entera sin imagen
+    closing:         40,   // Moraleja breve: 2-3 frases simples y directas
     "adult-guide":  180,   // Página entera sin imagen
     ngo:            120,   // Página entera sin imagen
     blank:            0
@@ -44,7 +44,7 @@ export function getStyleHints({ pageType, ageTarget }) {
     return "Claro, práctico, empático. Sin juzgar. Consejos accionables en párrafos cortos.";
   }
   if (pageType === "closing") {
-    return "Cálido, esperanzador, cierre emocional positivo. Frases cortas y cálidas.";
+    return "Escribe UNA SOLA FRASE de moraleja, máximo 2 frases. Simple, directa, positiva. Sin introducción ni título. Solo la enseñanza del cuento expresada de forma sencilla para niños.";
   }
   if (pageType === "ngo") {
     return "Inspirador, breve, informativo. Tono humano y cercano.";

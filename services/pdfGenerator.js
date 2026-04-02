@@ -241,8 +241,8 @@ async function addStoryPage(doc, page, settings) {
 
   const textBoxColor = settings?.textBoxColor || "#f9fafb";
   const textY    = imgH + 6;
-  // Reservar 28pt al final para el número de página
-  const textBoxH = H - textY - MARGIN - 28;
+  // Reservar 18pt al final para el número de página (ajustado al front)
+  const textBoxH = H - textY - MARGIN - 18;
 
   doc.roundedRect(MARGIN, textY, W - MARGIN * 2, textBoxH, 10).fill(textBoxColor);
 
@@ -250,7 +250,7 @@ async function addStoryPage(doc, page, settings) {
   // dividir por punto + espacio + mayúscula para lectura en voz alta
   const rawText = (page.text || "").trim();
   const textW      = W - MARGIN * 2 - 28;
-  const maxTextY   = H - MARGIN - 50;
+  const maxTextY   = H - MARGIN - 40; // tope superior al número de página
   const storyFontSize = 11.5;
   const paraGap    = 8;  // espacio entre los 2 párrafos
 
@@ -312,107 +312,95 @@ async function addStoryPage(doc, page, settings) {
 async function addTextPage(doc, page, settings) {
   const bgColor = settings?.blankPageColor || "#ffffff";
   doc.addPage({ size: [W, H] });
+
+  // ── MORALEJA: estructura igual que página de cuento (imagen arriba, banda abajo) ──
+  if (page.type === "closing") {
+    doc.rect(0, 0, W, H).fill(bgColor);
+    const imgBuf    = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
+    const bandColor = "#7c3aed";
+    const imgAreaH  = H * 0.60;
+    const bandH     = H - imgAreaH;
+
+    if (imgBuf) {
+      doc.save();
+      doc.rect(0, 0, W, imgAreaH).clip();
+      doc.image(imgBuf, 0, 0, { cover: [W, imgAreaH], align: "center", valign: "center" });
+      doc.restore();
+    } else {
+      doc.rect(0, 0, W, imgAreaH).fill("#ede9fe");
+      doc.font("Helvetica").fontSize(11).fillColor("#7c3aed")
+         .text("Ilustración moraleja", 0, imgAreaH / 2 - 6, { width: W, align: "center" });
+    }
+
+    doc.rect(0, imgAreaH, W, bandH).fill(bandColor);
+
+    // Etiqueta "MORALEJA" pequeña y elegante
+    doc.font("Helvetica").fontSize(9).fillColor("rgba(255,255,255,0.55)")
+       .text("MORALEJA", 0, imgAreaH + 14, { width: W, align: "center", characterSpacing: 2 });
+
+    // Texto: tomar solo las 2 primeras frases — moraleja simple
+    let moralejaText = (page.text || "")
+      .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+      .replace(/#+ /g, "").replace(/^[-•]\s*/gm, "").trim();
+    const sentences = moralejaText.split(/(?<=[.!?])\s+/);
+    moralejaText = sentences.slice(0, 3).join(" ").trim();
+
+    const textW = W - MARGIN * 2 - 20;
+    doc.font("Helvetica-Oblique").fontSize(13).fillColor("#ffffff");
+    const textH  = doc.heightOfString(moralejaText, { width: textW });
+    const textStartY = imgAreaH + 34 + Math.max(0, (bandH - 50 - textH) / 2);
+    doc.text(moralejaText, MARGIN + 10, textStartY, {
+      width: textW, align: "center", lineGap: 4
+    });
+
+    doc.font("Helvetica").fontSize(8).fillColor("rgba(255,255,255,0.35)")
+       .text("proyectoarena.com", 0, H - 18, { width: W, align: "center" });
+    return;
+  }
+
+  // ── ADULT-GUIDE y NGO: diseño editorial con banda superior ──
   doc.rect(0, 0, W, H).fill(bgColor);
 
   const configs = {
-    "closing": {
-      title:       "Moraleja",
-      accentColor: "#7c3aed",
-      fontSize:    13.5,
-      lineGap:     8,
-      centered:    true,
-      italic:      true
-    },
-    "adult-guide": {
-      title:       "Para quien lee este cuento",
-      accentColor: "#0e7490",
-      fontSize:    12,
-      lineGap:     6,
-      centered:    false,
-      italic:      false
-    },
-    "ngo": {
-      title:       "Sobre Proyecto Arena",
-      accentColor: "#15803d",
-      fontSize:    12,
-      lineGap:     6,
-      centered:    false,
-      italic:      false
-    }
+    "adult-guide": { title: "Para quien lee este cuento", accentColor: "#0e7490", fontSize: 11.5, lineGap: 5 },
+    "ngo":         { title: "Sobre Proyecto Arena",       accentColor: "#15803d", fontSize: 11.5, lineGap: 5 }
   };
-
   const cfg = configs[page.type] || configs["adult-guide"];
 
-  // Banda de color superior (cabecera visual)
-  const bandH = 52;
-  doc.rect(0, 0, W, bandH).fill(cfg.accentColor);
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(16)
-    .fillColor("#ffffff")
-    .text(cfg.title, MARGIN, (bandH - 16) / 2, { width: W - MARGIN * 2, align: "center" });
+  const bandH2 = 52;
+  doc.rect(0, 0, W, bandH2).fill(cfg.accentColor);
+  doc.font("Helvetica-Bold").fontSize(15).fillColor("#ffffff")
+     .text(cfg.title, MARGIN, (bandH2 - 15) / 2, { width: W - MARGIN * 2, align: "center" });
 
-  let contentY = bandH + 20;
+  let contentY = bandH2 + 18;
 
-  // Imagen para Moraleja
-  const imgBuf = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
-  if (imgBuf && page.type === "closing") {
-    const imgH = Math.min(H * 0.35, H - contentY - MARGIN - 80);
-    doc.save();
-    doc.roundedRect(MARGIN, contentY, W - MARGIN * 2, imgH, 10).clip();
-    doc.image(imgBuf, MARGIN, contentY, { fit: [W - MARGIN * 2, imgH], align: "center", valign: "center" });
-    doc.restore();
-    contentY += imgH + 18;
-  }
-
-  // Texto limpio, párrafos cortos
   let rawText = (page.text || "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/#+ /g, "")
-    .replace(/^[-•]\s*/gm, "")
-    .trim();
+    .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+    .replace(/#+ /g, "").replace(/^[-•]\s*/gm, "").trim();
 
   const paragraphs = rawText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 0);
-  const textW = W - MARGIN * 2 - 16;
-  const font  = cfg.italic ? "Helvetica-Oblique" : "Helvetica";
+  const textW2 = W - MARGIN * 2 - 16;
+  const bottomReserve = page.type === "ngo" ? 70 : 24;
 
-  // Reservar espacio para el pie en ngo
-  const bottomReserve = page.type === "ngo" ? 70 : 30;
-
-  doc.font(font).fontSize(cfg.fontSize).fillColor(COLOR_TEXT);
-
+  doc.font("Helvetica").fontSize(cfg.fontSize).fillColor(COLOR_TEXT);
   for (const para of paragraphs) {
     if (contentY > H - MARGIN - bottomReserve) break;
-    doc.text(para, MARGIN + 8, contentY, {
-      width: textW,
-      align: cfg.centered ? "center" : "left",
-      lineGap: 2
-    });
+    doc.text(para, MARGIN + 8, contentY, { width: textW2, align: "left", lineGap: 2 });
     contentY = doc.y + cfg.lineGap;
   }
 
-  // Pie ONG con banda de color
   if (page.type === "ngo") {
     const urlBoxY = H - MARGIN - 44;
     doc.rect(0, urlBoxY - 10, W, 54).fill(cfg.accentColor);
-    doc
-      .font("Helvetica-Bold").fontSize(11).fillColor("rgba(255,255,255,0.85)")
-      .text("Visítanos en:", MARGIN, urlBoxY, { width: W - MARGIN * 2, align: "center" });
-    doc
-      .font("Helvetica").fontSize(13).fillColor("#ffffff")
-      .text("www.proyectoarena.com", MARGIN, urlBoxY + 16, {
-        width: W - MARGIN * 2, align: "center", link: "https://proyectoarena.com"
-      });
-  }
-
-  // Pie sutil en moraleja y guía adultos
-  if (page.type === "closing" || page.type === "adult-guide") {
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("rgba(255,255,255,0.85)")
+       .text("Visítanos en:", MARGIN, urlBoxY, { width: W - MARGIN * 2, align: "center" });
+    doc.font("Helvetica").fontSize(13).fillColor("#ffffff")
+       .text("www.proyectoarena.com", MARGIN, urlBoxY + 16, { width: W - MARGIN * 2, align: "center", link: "https://proyectoarena.com" });
+  } else {
     doc.font("Helvetica").fontSize(8).fillColor(COLOR_MUTED)
        .text("proyectoarena.com", 0, H - MARGIN - 10, { width: W, align: "center" });
   }
 }
-
 // ============================================================
 //  NÚMERO DE PÁGINA
 // ============================================================
