@@ -77,6 +77,49 @@ async function addCoverPage(doc, page, settings) {
   }
 }
 
+
+// ============================================================
+//  PÁGINA DE TÍTULO (página 3 — título + subtítulo centrado)
+// ============================================================
+function addTitlePage(doc, bookData) {
+  doc.addPage({ size: [W, H] });
+  doc.rect(0, 0, W, H).fill("#ffffff");
+
+  const title    = bookData?.meta?.bookTitle    || "";
+  const subtitle = bookData?.meta?.bookSubtitle || "";
+
+  // Centro vertical aproximado
+  const centerY = H / 2 - 40;
+
+  // Línea decorativa superior
+  doc.moveTo(MARGIN + 40, centerY - 30)
+     .lineTo(W - MARGIN - 40, centerY - 30)
+     .strokeColor("#d1d5db").lineWidth(0.5).stroke();
+
+  // Título
+  doc.font("Helvetica-Bold").fontSize(26).fillColor("#111827")
+     .text(title, MARGIN, centerY - 10, {
+       width: W - MARGIN * 2,
+       align: "center",
+       lineGap: 6
+     });
+
+  // Subtítulo
+  if (subtitle) {
+    doc.font("Helvetica").fontSize(14).fillColor("#6b7280")
+       .text(subtitle, MARGIN, doc.y + 12, {
+         width: W - MARGIN * 2,
+         align: "center"
+       });
+  }
+
+  // Línea decorativa inferior
+  const lineY = doc.y + 24;
+  doc.moveTo(MARGIN + 40, lineY)
+     .lineTo(W - MARGIN - 40, lineY)
+     .strokeColor("#d1d5db").lineWidth(0.5).stroke();
+}
+
 // ============================================================
 //  ÍNDICE
 //  - Fondo: blankPageColor del usuario
@@ -409,12 +452,13 @@ export async function generatePdf(bookData) {
     if (p.type === "blank") {
       const prev = sortedPages[i-1];
       const next = sortedPages[i+1];
-      // Blank válido: tras portada del libro O al final (último elemento)
-      if (prev?.type === "cover" || !next) {
-        validBlanks.add(p.id);
-      }
-      // Blank válido también: tras el índice (por si hay alguno)
-      if (prev?.type === "index") {
+      // Blanks válidos según estructura KDP:
+      // - Tras portada del libro (verso portada)
+      // - Tras title-page (verso título)
+      // - Tras índice (verso índice)
+      // - Al final del libro (último elemento)
+      const validPrevTypes = new Set(["cover", "title-page", "index"]);
+      if (validPrevTypes.has(prev?.type) || !next) {
         validBlanks.add(p.id);
       }
     }
@@ -437,6 +481,8 @@ export async function generatePdf(bookData) {
         bookSubtitle: bookData?.meta?.bookSubtitle || page.subtitle || "",
         ...settings
       });
+    } else if (page.type === "title-page") {
+      addTitlePage(doc, bookData);
     } else if (page.type === "index") {
       await addIndexPage(doc, page, settings);
       addPageNumber(doc, globalPageNum);
