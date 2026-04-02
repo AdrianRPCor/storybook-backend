@@ -271,8 +271,14 @@ async function addStoryPage(doc, page, settings) {
 
   doc.font("Helvetica").fontSize(storyFontSize).fillColor(COLOR_TEXT);
 
-  let curY = textY + 12;
-  const availH = maxTextY - curY;
+  // Centrar verticalmente el texto en el recuadro disponible
+  const fullTextH = doc.heightOfString(
+    paragraphs.map(p => p).join("\n\n"),
+    { width: textW }
+  ) + (paragraphs.length - 1) * paraGap;
+  const availH = maxTextY - (textY + 12);
+  const topPadding = Math.max(0, Math.floor((availH - fullTextH) / 2));
+  let curY = textY + 12 + topPadding;
 
   for (let i = 0; i < paragraphs.length; i++) {
     if (curY >= maxTextY) break;
@@ -353,8 +359,6 @@ async function addTextPage(doc, page, settings) {
       width: textW, align: "center", lineGap: 4
     });
 
-    doc.font("Helvetica").fontSize(8).fillColor("rgba(255,255,255,0.35)")
-       .text("proyectoarena.com", 0, H - 18, { width: W, align: "center" });
     return;
   }
 
@@ -362,17 +366,19 @@ async function addTextPage(doc, page, settings) {
   doc.rect(0, 0, W, H).fill(bgColor);
 
   const configs = {
-    "adult-guide": { title: "Para quien lee este cuento", accentColor: "#0e7490", fontSize: 11.5, lineGap: 5 },
-    "ngo":         { title: "Sobre Proyecto Arena",       accentColor: "#15803d", fontSize: 11.5, lineGap: 5 }
+    "adult-guide": { title: "Para quien lee este cuento", accentColor: "#0e7490", fontSize: 12.5, lineGap: 5 },
+    "ngo":         { title: "Sobre Proyecto Arena",       accentColor: "#15803d", fontSize: 12.5, lineGap: 5 }
   };
   const cfg = configs[page.type] || configs["adult-guide"];
 
-  const bandH2 = 52;
-  doc.rect(0, 0, W, bandH2).fill(cfg.accentColor);
-  doc.font("Helvetica-Bold").fontSize(15).fillColor("#ffffff")
-     .text(cfg.title, MARGIN, (bandH2 - 15) / 2, { width: W - MARGIN * 2, align: "center" });
+  // Encabezado estilo índice: texto en mayúsculas + línea horizontal gris
+  doc.font("Helvetica-Bold").fontSize(18).fillColor(COLOR_TEXT)
+     .text(cfg.title.toUpperCase(), 0, MARGIN + 12, { width: W, align: "center" });
+  doc.moveTo(MARGIN + 20, MARGIN + 42)
+     .lineTo(W - MARGIN - 20, MARGIN + 42)
+     .strokeColor("#9ca3af").lineWidth(0.8).stroke();
 
-  let contentY = bandH2 + 18;
+  let contentY = MARGIN + 58;
 
   let rawText = (page.text || "")
     .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
@@ -380,7 +386,7 @@ async function addTextPage(doc, page, settings) {
 
   const paragraphs = rawText.split(/\n+/).map(p => p.trim()).filter(p => p.length > 0);
   const textW2 = W - MARGIN * 2 - 16;
-  const bottomReserve = page.type === "ngo" ? 70 : 24;
+  const bottomReserve = page.type === "ngo" ? 70 : MARGIN;
 
   doc.font("Helvetica").fontSize(cfg.fontSize).fillColor(COLOR_TEXT);
   for (const para of paragraphs) {
@@ -396,9 +402,6 @@ async function addTextPage(doc, page, settings) {
        .text("Visítanos en:", MARGIN, urlBoxY, { width: W - MARGIN * 2, align: "center" });
     doc.font("Helvetica").fontSize(13).fillColor("#ffffff")
        .text("www.proyectoarena.com", MARGIN, urlBoxY + 16, { width: W - MARGIN * 2, align: "center", link: "https://proyectoarena.com" });
-  } else {
-    doc.font("Helvetica").fontSize(8).fillColor(COLOR_MUTED)
-       .text("proyectoarena.com", 0, H - MARGIN - 10, { width: W, align: "center" });
   }
 }
 // ============================================================

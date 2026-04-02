@@ -18,7 +18,7 @@ export function getMaxWords({ pageType, ageTarget, pagesPerStory }) {
     index:          100,   // Lista de índice
     story:           60,   // 3 párrafos × ~2-3 líneas × ~9 palabras/línea = ~55 palabras
     closing:         40,   // Moraleja breve: 2-3 frases simples y directas
-    "adult-guide":  180,   // Página entera sin imagen
+    "adult-guide":  250,   // Página para padres/cuidadores con guía de lectura
     ngo:            120,   // Página entera sin imagen
     blank:            0
   };
@@ -41,7 +41,7 @@ export function getStyleHints({ pageType, ageTarget }) {
       : `Escribe 3 párrafos cortos separados por línea en blanco. Cada párrafo: 2 frases que formen una idea completa. Total máximo 60 palabras. ${dialogRule}`;
   }
   if (pageType === "adult-guide") {
-    return "Claro, práctico, empático. Sin juzgar. Consejos accionables en párrafos cortos.";
+    return "Escribe una guía práctica para el adulto que lee el cuento. Incluye: (1) qué emoción trabaja este cuento y por qué es importante, (2) en qué momentos es mejor leer este cuento al niño (hora del día, estado de ánimo), (3) cuándo NO es buen momento para leerlo, (4) 2-3 preguntas sencillas para hacer al niño durante la lectura. Tono cálido, empático, sin juzgar. Párrafos cortos. Sin viñetas ni listas con guiones.";
   }
   if (pageType === "closing") {
     return "Escribe UNA SOLA FRASE de moraleja, máximo 2 frases. Simple, directa, positiva. Sin introducción ni título. Solo la enseñanza del cuento expresada de forma sencilla para niños.";
