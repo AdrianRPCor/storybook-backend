@@ -1199,12 +1199,14 @@ function generateBookStructure() {
   const pagesPerStory = Number(bookData.settings.pagesPerStory);
   let order = 0;
 
-  // Estructura interior KDP (la portada va separada como PDF de portada):
-  // 1. Página título | 2. Blanco | 3. Índice | 4. Blanco | 5. Portada cuento 1...
-  bookData.pages.push({ id:uid(), type:"title-page", order:order++ }); // página de título
-  bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
-  bookData.pages.push({ id:uid(), type:"index",      text:"", imagePrompt:"", imageUrl:null, order:order++ });
-  bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
+  // PORTADA DEL LIBRO — solo para edición en el sidebar
+  // Se exporta como PDF de portada KDP separado, NO aparece en el PDF interior
+  bookData.pages.push({ id:uid(), type:"cover", title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, backImagePrompt:"", backImageUrl:null, order:order++ });
+  // Estructura interior KDP: título | blanco | índice | blanco | cuentos
+  bookData.pages.push({ id:uid(), type:"title-page", order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
+  bookData.pages.push({ id:uid(), type:"index", text:"", imagePrompt:"", imageUrl:null, order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
 
   // Cuentos
   for (let i = 0; i < numStories; i++) {
