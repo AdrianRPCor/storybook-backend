@@ -463,20 +463,31 @@ export async function generateCoverPdf(bookData) {
 
   // ── CONTRAPORTADA ──
   if (backImgBuf) {
-    doc.image(backImgBuf, backX, BLEED, { cover: [TRIM_W, TRIM_H], align: "center", valign: "bottom" });
+    doc.save();
+    doc.rect(backX, BLEED, TRIM_W, TRIM_H).clip();
+    doc.image(backImgBuf, backX, BLEED, { cover: [TRIM_W, TRIM_H], align: "center", valign: "center" });
+    doc.restore();
   } else {
     doc.rect(backX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
 
-  // Caja para texto
-  doc.roundedRect(backX + 24, BLEED + 24, TRIM_W - 48, 180, 10).fill("rgba(0,0,0,0.50)");
-
+  // Caja para texto — fondo semitransparente (PDFKit no soporta rgba en fill, usar fillOpacity)
   if (backText) {
-    doc
+    // Medir altura real del texto para ajustar el recuadro
+    doc.font("Helvetica-Oblique").fontSize(11.5);
+    const backTextH = doc.heightOfString(backText, { width: TRIM_W - 80 });
+    const backBoxPad = 16;
+    const backBoxH = backTextH + backBoxPad * 2;
+
+    doc.save();
+    doc.fillColor("#000000").fillOpacity(0.52);
+    doc.roundedRect(backX + 24, BLEED + 20, TRIM_W - 48, backBoxH, 8).fill();
+    doc.restore();
+
+    doc.fillColor("#ffffff").fillOpacity(1)
       .font("Helvetica-Oblique")
       .fontSize(11.5)
-      .fillColor("#ffffff")
-      .text(backText, backX + 40, BLEED + 44, {
+      .text(backText, backX + 40, BLEED + 20 + backBoxPad, {
         width: TRIM_W - 80, align: "center", lineGap: 4
       });
   }
@@ -485,10 +496,11 @@ export async function generateCoverPdf(bookData) {
   const spineColor = bookData?.settings?.spineColor || "#1e3a5f";
   doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill(spineColor);
 
-  if (spineWidth > 18 && spineText) {
+  if (spineWidth > 6 && spineText) {
     let spineFontSize = 10;
     if (spineWidth < 26) spineFontSize = 8;
-    if (spineWidth < 22) spineFontSize = 7;
+    if (spineWidth < 18) spineFontSize = 7;
+    if (spineWidth < 12) spineFontSize = 6;
     doc.save();
     doc.translate(spineX + spineWidth / 2, BLEED + TRIM_H / 2);
     doc.rotate(-90);
@@ -501,7 +513,10 @@ export async function generateCoverPdf(bookData) {
 
   // ── PORTADA FRONTAL ──
   if (imgBuf) {
+    doc.save();
+    doc.rect(frontX, BLEED, TRIM_W, TRIM_H).clip();
     doc.image(imgBuf, frontX, BLEED, { cover: [TRIM_W, TRIM_H], align: "center", valign: "center" });
+    doc.restore();
   } else {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
@@ -522,21 +537,26 @@ export async function generateCoverPdf(bookData) {
   }
   const boxH = titleH + subtitleH + titlePad * 2;
 
-  // Recuadro oscuro ajustado al texto (igual que en el front)
-  doc.roundedRect(frontX + 30, titleStartY - titlePad, titleBoxW, boxH, 8)
-     .fill("rgba(0,0,0,0.55)");
+  // Recuadro oscuro ajustado al texto — transparencia real con fillOpacity
+  doc.save();
+  doc.fillColor("#000000").fillOpacity(0.55);
+  doc.roundedRect(frontX + 30, titleStartY - titlePad, titleBoxW, boxH, 8).fill();
+  doc.restore();
 
   // Título
-  doc.font("Helvetica-Bold").fontSize(titleFontSize).fillColor("#ffffff")
+  doc.fillColor("#ffffff").fillOpacity(1)
+     .font("Helvetica-Bold").fontSize(titleFontSize)
      .text(title, titleBoxX + titlePad, titleStartY, {
        width: titleBoxW - titlePad * 2, align: "center", lineGap: 5
      });
 
   if (subtitle) {
-    doc.font("Helvetica").fontSize(13).fillColor("rgba(255,255,255,0.88)")
+    doc.fillColor("#ffffff").fillOpacity(0.90)
+       .font("Helvetica").fontSize(13)
        .text(subtitle, titleBoxX + titlePad, doc.y + 8, {
          width: titleBoxW - titlePad * 2, align: "center", lineGap: 3
        });
+    doc.fillOpacity(1);
   }
 
   // ── Logo ONG ──
