@@ -459,7 +459,7 @@ export async function generateCoverPdf(bookData) {
   const spineX = BLEED + TRIM_W;
   const frontX = BLEED + TRIM_W + spineWidth;
 
-  doc.rect(0, 0, coverWidth, coverHeight).fill("#ffffff");
+  doc.rect(0, 0, coverWidth, coverHeight).fill("#1e3a5f"); // fondo general azul, evita recuadros blancos
 
   // ── CONTRAPORTADA ──
   if (backImgBuf) {
@@ -502,7 +502,6 @@ export async function generateCoverPdf(bookData) {
   // ── PORTADA FRONTAL ──
   if (imgBuf) {
     doc.image(imgBuf, frontX, BLEED, { cover: [TRIM_W, TRIM_H], align: "center", valign: "center" });
-    doc.rect(frontX, BLEED + TRIM_H * 0.52, TRIM_W, TRIM_H * 0.48).fill("rgba(0,0,0,0.50)");
   } else {
     doc.rect(frontX, BLEED, TRIM_W, TRIM_H).fill("#1e3a5f");
   }
@@ -510,15 +509,34 @@ export async function generateCoverPdf(bookData) {
   const titleFontSize = title.length > 50 ? 22 : title.length > 35 ? 25 : 28;
   const titleBoxW = TRIM_W - 60;
   const titleBoxX = frontX + 30;
+  const titleStartY = BLEED + TRIM_H * 0.60;
+  const titlePad = 14; // padding interno del recuadro
 
+  // Calcular altura del texto del título para ajustar el recuadro
+  doc.font("Helvetica-Bold").fontSize(titleFontSize);
+  const titleH = doc.heightOfString(title, { width: titleBoxW - titlePad * 2 });
+  let subtitleH = 0;
+  if (subtitle) {
+    doc.font("Helvetica").fontSize(13);
+    subtitleH = doc.heightOfString(subtitle, { width: titleBoxW - titlePad * 2 }) + 10;
+  }
+  const boxH = titleH + subtitleH + titlePad * 2;
+
+  // Recuadro oscuro ajustado al texto (igual que en el front)
+  doc.roundedRect(frontX + 30, titleStartY - titlePad, titleBoxW, boxH, 8)
+     .fill("rgba(0,0,0,0.55)");
+
+  // Título
   doc.font("Helvetica-Bold").fontSize(titleFontSize).fillColor("#ffffff")
-     .text(title, titleBoxX, BLEED + TRIM_H * 0.60, {
-       width: titleBoxW, align: "center", lineGap: 5
+     .text(title, titleBoxX + titlePad, titleStartY, {
+       width: titleBoxW - titlePad * 2, align: "center", lineGap: 5
      });
 
   if (subtitle) {
-    doc.font("Helvetica").fontSize(13).fillColor("rgba(255,255,255,0.90)")
-       .text(subtitle, titleBoxX, doc.y + 8, { width: titleBoxW, align: "center", lineGap: 3 });
+    doc.font("Helvetica").fontSize(13).fillColor("rgba(255,255,255,0.88)")
+       .text(subtitle, titleBoxX + titlePad, doc.y + 8, {
+         width: titleBoxW - titlePad * 2, align: "center", lineGap: 3
+       });
   }
 
   // ── Logo ONG ──
