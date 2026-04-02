@@ -99,6 +99,8 @@
 #sbk-app .sbk__pageMock--textOnly .sbk__pageTextPreview{height:100%;margin-top:0;background:transparent}
 #sbk-app .sbk__pageMock--textOnly .sbk__imgMock{display:none}
 #sbk-app .sbk__pageMock--cover .sbk__imgMock{flex:1 1 auto}
+#sbk-app .sbk__pageMock--story-cover .sbk__imgMock{height:70%;border-radius:0;flex-shrink:0}
+#sbk-app .sbk__pageMock--story-cover .sbk__pageTextPreview{flex:1;background:var(--storyCoverBg,#1e3a5f);display:flex;align-items:center;justify-content:center;padding:12px;font-weight:800;font-size:13px;color:#fff;text-align:center;line-height:1.2}
 
 /* PORTADA PREVIEW */
 #sbk-app .sbk__coverPreviewTitle{font-weight:900;font-size:26px;line-height:1.1;text-align:center;margin-bottom:10px}
@@ -176,6 +178,9 @@
 .sbk__coverFieldsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sbk__coverFieldsGrid .sbk__label--full{grid-column:1/-1}
 
+
+#sbk-word-count.over { background:#fee2e2 !important; border-color:#fca5a5 !important; color:#dc2626 !important; font-weight:700; }
+#sbk-word-count.warn { background:#fef9c3 !important; border-color:#fde047 !important; color:#ca8a04 !important; }
 </style>
 </head>
 <body style="background:#f5f7fb">
@@ -420,7 +425,11 @@
                 </div>
                 <!-- Panel normal -->
                 <div id="sbk-normal-panel">
-                  <label class="sbk__label">Texto de la página
+                  <label class="sbk__label">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <span>Texto de la página</span>
+                      <span id="sbk-word-count" style="font-size:10px;padding:2px 7px;border-radius:999px;background:#f3f4f6;border:1px solid #e5e7eb;color:#64748b;transition:all .2s;">0 / 75 palabras</span>
+                    </div>
                     <textarea id="sbk-editor-text" class="sbk__textarea" rows="6" placeholder="El texto de esta página aparecerá aquí..."></textarea>
                   </label>
                   <label class="sbk__label">Prompt de imagen
@@ -903,6 +912,7 @@ function loadPageIntoEditor(page) {
     } else {
       textArea.value = page.text || "";
     }
+    updateWordCount(textArea.value, page.type);
   }
 
   // Prompt
@@ -941,6 +951,17 @@ function loadPageIntoEditor(page) {
       const labels = { cover:"Portada del libro", "story-cover":"Portada del cuento", story:"Ilustración", closing:"Imagen cierre" };
       imgMock.textContent = labels[page.type] || "Imagen";
     }
+  }
+
+  // Portada de cuento: aplicar color de banda y mostrar título
+  if (page.type === "story-cover") {
+    const storyIdx = bookData.stories.findIndex(s => s.id === page.storyId);
+    const colors = ["#1e3a5f","#3b1f5e","#1a4731","#5e1f1f","#1f3d5e","#4a2c1a"];
+    const bandColor = colors[Math.max(0, storyIdx) % colors.length];
+    const pageMock = document.getElementById("sbk-page-mock");
+    if (pageMock) pageMock.style.setProperty("--storyCoverBg", bandColor);
+    const tp = document.getElementById("sbk-text-preview");
+    if (tp) tp.textContent = page.title || "Título del cuento";
   }
 }
 
@@ -1067,9 +1088,26 @@ function bindEditorPersistence() {
   const promptArea = document.getElementById("sbk-editor-prompt");
   if (!textArea || !promptArea) return;
 
+  // Función para contar palabras y actualizar el indicador
+  function updateWordCount(text, pageType) {
+    const wc = document.getElementById("sbk-word-count");
+    // Ocultar en páginas sin límite de texto
+    const noLimit = ["cover", "title-page", "story-cover", "index", "blank"].includes(pageType);
+    if (wc) wc.style.display = noLimit ? "none" : "inline-block";
+    if (!wc) return;
+    const noWordCount = ["cover", "index", "blank", "title-page"].includes(pageType);
+    if (noWordCount) { wc.style.display="none"; return; }
+    wc.style.display = "inline-block";
+    const limit = ["adult-guide","closing","ngo"].includes(pageType) ? 180 : 75;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    wc.textContent = `${words} / ${limit} palabras`;
+    wc.className = words > limit ? "over" : words > limit * 0.85 ? "warn" : "";
+  }
+
   textArea.addEventListener("input", () => {
     const page = getCurrentPage();
     if (!page) return;
+    updateWordCount(textArea.value, page.type);
     const textPreview = document.getElementById("sbk-text-preview");
     if (page.type === "cover") {
       const lines = textArea.value.split("\n");
@@ -1145,7 +1183,7 @@ function selectBookPage(pageId) {
   document.querySelectorAll(".sbk__item").forEach(el => el.classList.remove("sbk__item--active"));
   const active = document.querySelector(`[data-page-id="${pageId}"]`);
   if (active) active.classList.add("sbk__item--active");
-  const modeMap = { cover:"cover", "story-cover":"cover", index:"index", closing:"closing", "adult-guide":"adult", ngo:"ngo", "title-page":"title" };
+  const modeMap = { cover:"cover", "story-cover":"story-cover", index:"index", closing:"closing", "adult-guide":"adult", ngo:"ngo", "title-page":"title" };
   setEditorMode(modeMap[page.type] || "story");
   loadPageIntoEditor(page);
   saveProject();
@@ -1161,11 +1199,9 @@ function generateBookStructure() {
   const pagesPerStory = Number(bookData.settings.pagesPerStory);
   let order = 0;
 
-  // Estructura KDP estándar:
-  // 1. Portada | 2. Blanco | 3. Página de título | 4. Blanco | 5. Índice | 6. Blanco | 7. Portada cuento 1...
-  bookData.pages.push({ id:uid(), type:"cover",      title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, backImagePrompt:"", backImageUrl:null, order:order++ });
-  bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
-  bookData.pages.push({ id:uid(), type:"title-page", order:order++ }); // página de título centrado
+  // Estructura interior KDP (la portada va separada como PDF de portada):
+  // 1. Página título | 2. Blanco | 3. Índice | 4. Blanco | 5. Portada cuento 1...
+  bookData.pages.push({ id:uid(), type:"title-page", order:order++ }); // página de título
   bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
   bookData.pages.push({ id:uid(), type:"index",      text:"", imagePrompt:"", imageUrl:null, order:order++ });
   bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
