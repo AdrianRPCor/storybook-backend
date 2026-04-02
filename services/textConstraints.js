@@ -9,7 +9,7 @@ export function getMaxWords({ pageType, ageTarget }) {
     ageTarget?.includes("7") ? 1.25 : 1.0;
 
   const base = {
-    cover:         12,
+    cover:         150,  // necesita espacio para TÍTULO + SUBTÍTULO + CONTRAPORTADA
     "story-cover": 10,
     index:        120,
     parents:      220,
