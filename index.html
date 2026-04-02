@@ -159,9 +159,9 @@
 .sbk__coverZone--spine{width:12px;height:360px;background:#152d4a;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .sbk__coverZone--front{width:240px;height:360px;background:#1e3a5f}
 .sbk__coverImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}
-.sbk__coverFrontFill{position:absolute;left:0;right:0;top:55%;bottom:0;background:rgba(0,0,0,0.45)}
-.sbk__coverFrontOverlay{position:absolute;left:0;right:0;top:62%;display:flex;flex-direction:column;align-items:center;padding:0 10px}
-.sbk__coverFrontTitle{font-size:14px!important;font-weight:900!important;color:#fff!important;text-align:center;line-height:1.1;margin-bottom:4px;text-shadow:0 1px 6px rgba(0,0,0,0.3)}
+.sbk__coverFrontFill{position:absolute;left:0;right:0;top:52%;bottom:0;background:rgba(0,0,0,0.28)}
+.sbk__coverFrontOverlay{position:absolute;left:10px;right:10px;top:60%;display:inline-flex;flex-direction:column;align-items:center;padding:8px 10px;background:rgba(0,0,0,0.52);border-radius:6px}
+.sbk__coverFrontTitle{font-size:14px!important;font-weight:900!important;color:#fff!important;text-align:center;line-height:1.15;margin-bottom:3px;text-shadow:0 1px 4px rgba(0,0,0,0.4)}
 .sbk__coverFrontSubtitle{font-size:8px!important;color:#e5e7eb!important;text-align:center;line-height:1.3}
 .sbk__coverBackFill{position:absolute;inset:0;background:rgba(30,58,95,0.85)}
 .sbk__coverBackTextBox{position:absolute;top:10px;left:10px;right:10px;background:rgba(0,0,0,0.5);border-radius:5px;padding:8px 10px}
@@ -1219,6 +1219,10 @@ async function generateFullBookTextOnly() {
         bookData.meta.bookSubtitle  = page.subtitle;
         bookData.meta.backCoverText = page.backText;
         console.log("✅ Portada parseada:", { title: page.title, backText: page.backText?.slice(0,60) });
+        // Actualizar spread y textarea en tiempo real
+        renderCoverSpread(page);
+        const _bteNow = document.getElementById("sbk-cover-back-edit");
+        if (_bteNow) _bteNow.value = page.backText || "";
       } else if (page.type === "story-cover") {
         page.title = text.trim();
         page.text  = text.trim();
@@ -1260,14 +1264,16 @@ async function generateFullBookTextOnly() {
 
   setProgress(100, "✍️ Textos completados", "Sincronizando…");
   syncSettingsUI();
-  // FIX CRÍTICO: sincronizar backCoverText en meta y rellenar el textarea de portada
+  // FIX CRÍTICO: sincronizar backCoverText y actualizar spread + textarea siempre
   const _cpFix = bookData.pages.find(p => p.type === "cover");
   if (_cpFix) {
     if (!bookData.meta.backCoverText && _cpFix.backText)
       bookData.meta.backCoverText = _cpFix.backText;
-    // Rellenar el textarea visible del panel de portada
+    // Rellenar el textarea visible del panel de portada (siempre, no solo si vacío)
     const _bte = document.getElementById("sbk-cover-back-edit") || document.getElementById("sbk-back-cover-text");
-    if (_bte && bookData.meta.backCoverText) _bte.value = bookData.meta.backCoverText;
+    if (_bte) _bte.value = bookData.meta.backCoverText || "";
+    // Actualizar el spread con todos los datos
+    renderCoverSpread(_cpFix);
   }
   renderStoryTitles();
   renderPageList();
