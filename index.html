@@ -89,13 +89,13 @@
 #sbk-app .sbk__gridEditor{display:flex;flex-direction:column;align-items:center;gap:24px}
 
 /* PAGE MOCK */
-#sbk-app .sbk__pageMock{width:420px;max-width:90%;aspect-ratio:2/3;margin:0 auto;position:relative;background:white;border:1px solid #ddd;box-shadow:0 10px 30px rgba(0,0,0,0.08)}
+#sbk-app .sbk__pageMock{width:420px;max-width:90%;aspect-ratio:2/3;margin:0 auto;position:relative;background:white;border:1px solid #ddd;box-shadow:0 10px 30px rgba(0,0,0,0.08);display:flex;flex-direction:column;padding:8.33%}
 #sbk-app .sbk__pageInner{position:absolute;inset:8% 8%}
-#sbk-app .sbk__imgMock{height:60%;border-radius:10px;background:linear-gradient(180deg,#eef2f7,#e5e7eb);display:flex;align-items:center;justify-content:center;font-size:12px;background-size:cover;background-position:center}
-#sbk-app .sbk__pageTextPreview{margin-top:4%;background:var(--textBoxColor,#f9fafb);border-radius:10px;padding:14px;font-size:14px;line-height:1.45;color:#111827;overflow:hidden;white-space:pre-wrap;word-break:break-word}
+#sbk-app .sbk__imgMock{height:56.4%;border-radius:10px;background:linear-gradient(180deg,#eef2f7,#e5e7eb);display:flex;align-items:center;justify-content:center;font-size:12px;background-size:cover;background-position:center;flex-shrink:0}
+#sbk-app .sbk__pageTextPreview{margin-top:0.9%;background:var(--textBoxColor,#f9fafb);border-radius:10px;padding:8px 12px;font-size:11px;line-height:1.5;color:#111827;overflow:hidden;white-space:pre-wrap;word-break:break-word;height:28.7%;box-sizing:border-box}
 
 /* MODOS */
-#sbk-app .sbk__pageMock--story .sbk__pageTextPreview{height:35%}
+#sbk-app .sbk__pageMock--story .sbk__pageTextPreview{height:28.7%}
 #sbk-app .sbk__pageMock--textOnly .sbk__pageTextPreview{height:100%;margin-top:0;background:transparent}
 #sbk-app .sbk__pageMock--textOnly .sbk__imgMock{display:none}
 #sbk-app .sbk__pageMock--cover .sbk__imgMock{flex:1 1 auto}
@@ -351,10 +351,9 @@
             <div class="sbk__gridEditor">
               <!-- PÁGINA NORMAL -->
               <div class="sbk__pageMock" id="sbk-page-mock">
-                <div class="sbk__pageInner">
                   <div class="sbk__imgMock" id="sbk-img-mock">Imagen</div>
                   <div class="sbk__pageTextPreview" id="sbk-text-preview"></div>
-                </div>
+                  <div id="sbk-page-num-preview" style="position:absolute;bottom:3%;width:100%;text-align:center;font-size:9px;color:#9ca3af;left:0;"></div>
               </div>
 
               <!-- SPREAD PORTADA KDP -->
@@ -936,6 +935,19 @@ function loadPageIntoEditor(page) {
       renderIndexPreview(textPreview, page.text || "");
     } else {
       textPreview.textContent = page.text || "";
+    }
+    // Número de página en el preview
+    const pnEl = document.getElementById("sbk-page-num-preview");
+    if (pnEl) {
+      const pagesWithNum = ["story","index","closing","adult-guide","ngo"];
+      if (pagesWithNum.includes(page.type) && page.order !== undefined) {
+        // Calcular número real (sin blanks)
+        const realNum = bookData.pages.filter(p => p.type !== "blank" && p.order <= page.order).length;
+        pnEl.textContent = realNum;
+        pnEl.style.display = "block";
+      } else {
+        pnEl.style.display = "none";
+      }
     }
   }
 
