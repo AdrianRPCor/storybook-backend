@@ -1081,28 +1081,27 @@ function esc(str) {
 }
 
 // ============================================================
+//  CONTADOR DE PALABRAS — función global
+// ============================================================
+function updateWordCount(text, pageType) {
+  const wc = document.getElementById("sbk-word-count");
+  if (!wc) return;
+  const noLimit = ["cover", "title-page", "story-cover", "index", "blank"].includes(pageType);
+  if (noLimit) { wc.style.display = "none"; return; }
+  wc.style.display = "inline-block";
+  const limit = ["adult-guide","closing","ngo"].includes(pageType) ? 180 : 55;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  wc.textContent = `${words} / ${limit} palabras`;
+  wc.className = words > limit ? "over" : words > limit * 0.85 ? "warn" : "";
+}
+
+// ============================================================
 //  PERSISTENCIA DEL EDITOR EN TIEMPO REAL
 // ============================================================
 function bindEditorPersistence() {
   const textArea   = document.getElementById("sbk-editor-text");
   const promptArea = document.getElementById("sbk-editor-prompt");
   if (!textArea || !promptArea) return;
-
-  // Función para contar palabras y actualizar el indicador
-  function updateWordCount(text, pageType) {
-    const wc = document.getElementById("sbk-word-count");
-    // Ocultar en páginas sin límite de texto
-    const noLimit = ["cover", "title-page", "story-cover", "index", "blank"].includes(pageType);
-    if (wc) wc.style.display = noLimit ? "none" : "inline-block";
-    if (!wc) return;
-    const noWordCount = ["cover", "index", "blank", "title-page"].includes(pageType);
-    if (noWordCount) { wc.style.display="none"; return; }
-    wc.style.display = "inline-block";
-    const limit = ["adult-guide","closing","ngo"].includes(pageType) ? 180 : 75;
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    wc.textContent = `${words} / ${limit} palabras`;
-    wc.className = words > limit ? "over" : words > limit * 0.85 ? "warn" : "";
-  }
 
   textArea.addEventListener("input", () => {
     const page = getCurrentPage();
