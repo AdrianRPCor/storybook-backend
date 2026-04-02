@@ -452,12 +452,11 @@ export async function generatePdf(bookData) {
     if (p.type === "blank") {
       const prev = sortedPages[i-1];
       const next = sortedPages[i+1];
-      // Blanks válidos según estructura KDP:
-      // - Tras portada del libro (verso portada)
-      // - Tras title-page (verso título)
-      // - Tras índice (verso índice)
+      // Blanks válidos en el interior del libro:
+      // - Tras title-page (verso del título)
+      // - Tras índice (verso del índice)
       // - Al final del libro (último elemento)
-      const validPrevTypes = new Set(["cover", "title-page", "index"]);
+      const validPrevTypes = new Set(["title-page", "index"]);
       if (validPrevTypes.has(prev?.type) || !next) {
         validBlanks.add(p.id);
       }
@@ -476,11 +475,9 @@ export async function generatePdf(bookData) {
     globalPageNum++;
 
     if (page.type === "cover") {
-      await addCoverPage(doc, page, {
-        bookTitle:    bookData?.meta?.bookTitle    || page.title    || "",
-        bookSubtitle: bookData?.meta?.bookSubtitle || page.subtitle || "",
-        ...settings
-      });
+      // La portada del libro se genera por separado (PDF portada KDP)
+      // Si por alguna razón llega aquí, la ignoramos
+      continue;
     } else if (page.type === "title-page") {
       addTitlePage(doc, bookData);
     } else if (page.type === "index") {
