@@ -1162,9 +1162,9 @@ function generateBookStructure() {
 
   // Portada
   bookData.pages.push({ id:uid(), type:"cover", title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, backImagePrompt:"", backImageUrl:null, order:order++ });
-  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ }); // verso portada
   bookData.pages.push({ id:uid(), type:"index", text:"", imagePrompt:"", imageUrl:null, order:order++ });
-  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ });
+  // Sin blank tras índice — los cuentos empiezan directamente
 
   // Cuentos
   for (let i = 0; i < numStories; i++) {
@@ -1181,10 +1181,9 @@ function generateBookStructure() {
 
   // Cierre
   bookData.pages.push({ id:uid(), type:"closing",      text:"", imagePrompt:"", imageUrl:null, order:order++ });
-  bookData.pages.push({ id:uid(), type:"adult-guide",  text:"", order:order++ });
-  bookData.pages.push({ id:uid(), type:"adult-guide",  text:"", order:order++ });
+  bookData.pages.push({ id:uid(), type:"adult-guide",  text:"", order:order++ }); // una sola página para adultos
   bookData.pages.push({ id:uid(), type:"ngo",          text:"", order:order++ });
-  bookData.pages.push({ id:uid(), type:"blank",        color:bookData.settings.blankPageColor, order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank",        color:bookData.settings.blankPageColor, order:order++ }); // verso final
 }
 
 // ============================================================
