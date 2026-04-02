@@ -16,8 +16,8 @@ export function getMaxWords({ pageType, ageTarget, pagesPerStory }) {
     cover:          150,   // TÍTULO + SUBTÍTULO + CONTRAPORTADA
     "story-cover":    8,   // Solo título corto
     index:          100,   // Lista de índice
-    story:           60,   // 3 párrafos × ~2-3 líneas × ~9 palabras/línea = ~55 palabras
-    closing:         40,   // Moraleja breve: 2-3 frases simples y directas
+    story:           65,   // 45-65 palabras: 3 párrafos × 2 frases cortas = ~60 palabras
+    closing:         65,   // Igual que story: 3 párrafos cortos, es la última página del cuento
     "adult-guide":  250,   // Página para padres/cuidadores con guía de lectura
     ngo:            120,   // Página entera sin imagen
     blank:            0
@@ -38,13 +38,14 @@ export function getStyleHints({ pageType, ageTarget }) {
     const dialogRule = "Los diálogos van con raya (—) al inicio, sin comillas. Ejemplo: —¡Hola! —dijo Lía.";
     return ageTarget?.includes("3")
       ? `Escribe 3 párrafos cortos separados por línea en blanco. Cada párrafo: 1-2 frases muy cortas. Vocabulario muy simple. Total máximo 45 palabras. ${dialogRule}`
-      : `Escribe 3 párrafos cortos separados por línea en blanco. Cada párrafo: 2 frases que formen una idea completa. Total máximo 60 palabras. ${dialogRule}`;
+      : `Escribe 3 párrafos cortos separados por línea en blanco. Cada párrafo: 2 frases que formen una idea completa. Mínimo 45 palabras, máximo 65 palabras. ${dialogRule}`;
   }
   if (pageType === "adult-guide") {
     return "Escribe una guía práctica para el adulto que lee el cuento. Incluye: (1) qué emoción trabaja este cuento y por qué es importante, (2) en qué momentos es mejor leer este cuento al niño (hora del día, estado de ánimo), (3) cuándo NO es buen momento para leerlo, (4) 2-3 preguntas sencillas para hacer al niño durante la lectura. Tono cálido, empático, sin juzgar. Párrafos cortos. Sin viñetas ni listas con guiones.";
   }
   if (pageType === "closing") {
-    return "Escribe UNA SOLA FRASE de moraleja, máximo 2 frases. Simple, directa, positiva. Sin introducción ni título. Solo la enseñanza del cuento expresada de forma sencilla para niños.";
+    const dialogRuleC = "Los diálogos van con raya (—) al inicio, sin comillas.";
+    return `Escribe 3 párrafos cortos separados por línea en blanco. Cada párrafo: 2 frases que formen una idea completa. Es la página final del cuento: muestra cómo el protagonista ha aprendido algo y cierra la historia con emoción positiva. Total máximo 65 palabras. ${dialogRuleC}`;;
   }
   if (pageType === "ngo") {
     return "Inspirador, breve, informativo. Tono humano y cercano.";

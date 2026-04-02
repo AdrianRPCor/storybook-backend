@@ -319,46 +319,9 @@ async function addTextPage(doc, page, settings) {
   const bgColor = settings?.blankPageColor || "#ffffff";
   doc.addPage({ size: [W, H] });
 
-  // ── MORALEJA: estructura igual que página de cuento (imagen arriba, banda abajo) ──
+  // ── MORALEJA: idéntica a una página de cuento normal ──
   if (page.type === "closing") {
-    doc.rect(0, 0, W, H).fill(bgColor);
-    const imgBuf    = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
-    const bandColor = "#7c3aed";
-    const imgAreaH  = H * 0.60;
-    const bandH     = H - imgAreaH;
-
-    if (imgBuf) {
-      doc.save();
-      doc.rect(0, 0, W, imgAreaH).clip();
-      doc.image(imgBuf, 0, 0, { cover: [W, imgAreaH], align: "center", valign: "center" });
-      doc.restore();
-    } else {
-      doc.rect(0, 0, W, imgAreaH).fill("#ede9fe");
-      doc.font("Helvetica").fontSize(11).fillColor("#7c3aed")
-         .text("Ilustración moraleja", 0, imgAreaH / 2 - 6, { width: W, align: "center" });
-    }
-
-    doc.rect(0, imgAreaH, W, bandH).fill(bandColor);
-
-    // Etiqueta "MORALEJA" pequeña y elegante
-    doc.font("Helvetica").fontSize(9).fillColor("rgba(255,255,255,0.55)")
-       .text("MORALEJA", 0, imgAreaH + 14, { width: W, align: "center", characterSpacing: 2 });
-
-    // Texto: tomar solo las 2 primeras frases — moraleja simple
-    let moralejaText = (page.text || "")
-      .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-      .replace(/#+ /g, "").replace(/^[-•]\s*/gm, "").trim();
-    const sentences = moralejaText.split(/(?<=[.!?])\s+/);
-    moralejaText = sentences.slice(0, 3).join(" ").trim();
-
-    const textW = W - MARGIN * 2 - 20;
-    doc.font("Helvetica-Oblique").fontSize(13).fillColor("#ffffff");
-    const textH  = doc.heightOfString(moralejaText, { width: textW });
-    const textStartY = imgAreaH + 34 + Math.max(0, (bandH - 50 - textH) / 2);
-    doc.text(moralejaText, MARGIN + 10, textStartY, {
-      width: textW, align: "center", lineGap: 4
-    });
-
+    await addStoryPage(doc, page, settings);
     return;
   }
 
@@ -395,13 +358,10 @@ async function addTextPage(doc, page, settings) {
     contentY = doc.y + cfg.lineGap;
   }
 
-  if (page.type === "ngo") {
-    const urlBoxY = H - MARGIN - 44;
-    doc.rect(0, urlBoxY - 10, W, 54).fill(cfg.accentColor);
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("rgba(255,255,255,0.85)")
-       .text("Visítanos en:", MARGIN, urlBoxY, { width: W - MARGIN * 2, align: "center" });
-    doc.font("Helvetica").fontSize(13).fillColor("#ffffff")
-       .text("www.proyectoarena.com", MARGIN, urlBoxY + 16, { width: W - MARGIN * 2, align: "center", link: "https://proyectoarena.com" });
+  // NGO: al pie, solo la URL como texto discreto (sin banda)
+  if (page.type === "ngo" && contentY < H - MARGIN - 20) {
+    doc.font("Helvetica").fontSize(10).fillColor(COLOR_MUTED)
+       .text("proyectoarena.com", MARGIN, H - MARGIN - 14, { width: W - MARGIN * 2, align: "center" });
   }
 }
 // ============================================================
