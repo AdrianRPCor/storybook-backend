@@ -1,47 +1,55 @@
 // services/textConstraints.js
+// maxWords calibrados con las dimensiones reales del PDF (W=432pt H=648pt MARGIN=36pt)
+// Página story: imagen ocupa H*0.62, texto en los 204pt restantes
+// Con Helvetica 13pt + lineGap 2pt = ~13 líneas × ~8 palabras/línea = ~104 palabras máx
+// Usamos 75 palabras (72% del máximo) como límite seguro con margen amplio
 
-export function getMaxWords({ pageType, ageTarget }) {
+export function getMaxWords({ pageType, ageTarget, pagesPerStory }) {
   const ageFactor =
     ageTarget?.includes("3") ? 0.75 :
     ageTarget?.includes("4") ? 0.85 :
     ageTarget?.includes("5") ? 1.0  :
-    ageTarget?.includes("6") ? 1.15 :
-    ageTarget?.includes("7") ? 1.25 : 1.0;
+    ageTarget?.includes("6") ? 1.1  :
+    ageTarget?.includes("7") ? 1.2  : 1.0;
 
   const base = {
-    cover:         150,  // necesita espacio para TÍTULO + SUBTÍTULO + CONTRAPORTADA
-    "story-cover": 10,
-    index:        120,
-    parents:      220,
-    story:         90,
-    closing:      120,
-    "adult-guide": 220,
-    ngo:          120,
-    blank:          0
+    cover:          150,   // TÍTULO + SUBTÍTULO + CONTRAPORTADA
+    "story-cover":    8,   // Solo título corto
+    index:          100,   // Lista de índice
+    story:           75,   // CALIBRADO: 72% del espacio real del PDF (104 palabras máx)
+    closing:        130,   // Página entera sin imagen
+    "adult-guide":  180,   // Página entera sin imagen
+    ngo:            120,   // Página entera sin imagen
+    blank:            0
   };
 
-  const b = base[pageType] ?? 90;
+  const b = base[pageType] ?? 75;
   return Math.round(b * ageFactor);
 }
 
 export function getStyleHints({ pageType, ageTarget }) {
-  if (pageType === "cover" || pageType === "story-cover") {
-    return "Corto, emocional, memorable. Sin signos raros. Sin comillas.";
+  if (pageType === "cover") {
+    return "Usa formato EXACTO: TÍTULO: [máx 8 palabras]\nSUBTÍTULO: [máx 12 palabras]\nCONTRAPORTADA: [máx 80 palabras, segunda persona, cálido, invita a leer].";
   }
-  if (pageType === "parents" || pageType === "adult-guide") {
-    return "Claro, práctico, empático. Sin juzgar. Consejos accionables.";
+  if (pageType === "story-cover") {
+    return "Solo el título del cuento. Máximo 8 palabras. Sin puntos. Sin comillas.";
   }
-  if (pageType === "index") {
-    return "Lista simple y clara. Sin florituras.";
+  if (pageType === "story") {
+    return ageTarget?.includes("3")
+      ? "Frases MUY cortas (3-6 palabras). Una idea por frase. Vocabulario muy simple."
+      : "Frases cortas (5-10 palabras). Una escena por página. Texto que cabe en un recuadro pequeño de libro impreso.";
+  }
+  if (pageType === "adult-guide") {
+    return "Claro, práctico, empático. Sin juzgar. Consejos accionables en párrafos cortos.";
   }
   if (pageType === "closing") {
-    return "Cálido, esperanzador, cierre emocional positivo. Frases cortas.";
+    return "Cálido, esperanzador, cierre emocional positivo. Frases cortas y cálidas.";
   }
   if (pageType === "ngo") {
     return "Inspirador, breve, informativo. Tono humano y cercano.";
   }
-  // story
-  return ageTarget?.includes("3")
-    ? "Frases cortas. Vocabulario muy simple. Mucha claridad."
-    : "Frases cortas/medias. Vocabulario sencillo y cálido.";
+  if (pageType === "index") {
+    return "Lista simple y clara. Sin florituras.";
+  }
+  return "Frases cortas y claras. Tono cálido.";
 }

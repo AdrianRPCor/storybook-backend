@@ -215,12 +215,34 @@ async function addStoryPage(doc, page, settings) {
   }
 
   let curY = textY + 12;
-  const textW = W - MARGIN * 2 - 28;
+  const textW   = W - MARGIN * 2 - 28;
+  // Tope máximo: dejar 22pt para el número de página
+  const maxTextY = H - MARGIN - 22;
 
   doc.font("Helvetica").fontSize(13).fillColor(COLOR_TEXT);
 
   for (const para of paragraphs) {
-    if (curY > H - MARGIN - 18) break;
+    if (curY > maxTextY) break;
+    // Medir altura del párrafo antes de dibujarlo
+    const paraH = doc.heightOfString(para, { width: textW });
+    if (curY + paraH > maxTextY) {
+      // Truncar: dibujar lo que quepa en el espacio restante
+      const availH = maxTextY - curY;
+      const linesAvail = Math.max(1, Math.floor(availH / 15));
+      // Dividir el párrafo en palabras y tomar las que caben
+      const words = para.split(" ");
+      let partial = "";
+      for (const word of words) {
+        const test = partial ? partial + " " + word : word;
+        const testH = doc.heightOfString(test, { width: textW });
+        if (testH > availH) break;
+        partial = test;
+      }
+      if (partial) {
+        doc.text(partial, MARGIN + 14, curY, { width: textW, align: "left", lineGap: 2 });
+      }
+      break;
+    }
     doc.text(para, MARGIN + 14, curY, { width: textW, align: "left", lineGap: 2 });
     curY = doc.y + 6;
   }
@@ -338,10 +360,13 @@ async function addTextPage(doc, page, settings) {
 //  NÚMERO DE PÁGINA
 // ============================================================
 function addPageNumber(doc, pageNum) {
+  // Posición absoluta garantizada — save/restore para no afectar al cursor de texto
+  doc.save();
   doc.font("Helvetica").fontSize(9).fillColor(COLOR_MUTED)
      .text(String(pageNum), 0, H - MARGIN + 8, {
        width: W, align: "center", lineBreak: false
      });
+  doc.restore();
 }
 
 // ============================================================
