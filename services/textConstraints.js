@@ -16,7 +16,7 @@ export function getMaxWords({ pageType, ageTarget, pagesPerStory }) {
     cover:          150,   // TÍTULO + SUBTÍTULO + CONTRAPORTADA
     "story-cover":    8,   // Solo título corto
     index:          100,   // Lista de índice
-    story:           55,   // 2 párrafos × ~2-3 líneas × ~9 palabras/línea = ~55 palabras
+    story:           60,   // 3 párrafos × ~2-3 líneas × ~9 palabras/línea = ~55 palabras
     closing:        130,   // Página entera sin imagen
     "adult-guide":  180,   // Página entera sin imagen
     ngo:            120,   // Página entera sin imagen
@@ -37,8 +37,8 @@ export function getStyleHints({ pageType, ageTarget }) {
   if (pageType === "story") {
     const dialogRule = "Los diálogos van con raya (—) al inicio, sin comillas. Ejemplo: —¡Hola! —dijo Lía.";
     return ageTarget?.includes("3")
-      ? `Escribe EXACTAMENTE 2 párrafos separados por una línea en blanco. Cada párrafo: 2 frases muy cortas (3-5 palabras cada una). Vocabulario muy simple. Total máximo 40 palabras. ${dialogRule}`
-      : `Escribe EXACTAMENTE 2 párrafos separados por una línea en blanco. Cada párrafo: 2-3 frases cortas que formen una idea completa (no listas de frases sueltas). Total máximo 55 palabras. ${dialogRule}`;
+      ? `Escribe 3 párrafos cortos separados por línea en blanco. Cada párrafo: 1-2 frases muy cortas. Vocabulario muy simple. Total máximo 45 palabras. ${dialogRule}`
+      : `Escribe 3 párrafos cortos separados por línea en blanco. Cada párrafo: 2 frases que formen una idea completa. Total máximo 60 palabras. ${dialogRule}`;
   }
   if (pageType === "adult-guide") {
     return "Claro, práctico, empático. Sin juzgar. Consejos accionables en párrafos cortos.";

@@ -279,8 +279,10 @@ async function addStoryPage(doc, page, settings) {
     const para = paragraphs[i];
     const remainH = maxTextY - curY;
     // Espacio que queda para este párrafo (dejar hueco para el siguiente si hay)
-    const spaceForThis = i < paragraphs.length - 1
-      ? remainH - paraGap - storyFontSize * 2  // dejar mínimo 2 líneas para el siguiente
+    // Reservar espacio para los párrafos restantes (mínimo 2 líneas cada uno)
+    const remaining = paragraphs.length - 1 - i;
+    const spaceForThis = remaining > 0
+      ? remainH - (paraGap + storyFontSize * 2) * remaining
       : remainH;
 
     const paraH = doc.heightOfString(para, { width: textW });
