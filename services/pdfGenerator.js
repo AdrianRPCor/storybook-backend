@@ -219,7 +219,8 @@ async function addStoryPage(doc, page, settings) {
   // Tope máximo: dejar 22pt para el número de página
   const maxTextY = H - MARGIN - 22;
 
-  doc.font("Helvetica").fontSize(13).fillColor(COLOR_TEXT);
+  const storyFontSize = 11.5; // reducido para caber más texto en el recuadro
+  doc.font("Helvetica").fontSize(storyFontSize).fillColor(COLOR_TEXT);
 
   for (const para of paragraphs) {
     if (curY > maxTextY) break;
@@ -360,13 +361,20 @@ async function addTextPage(doc, page, settings) {
 //  NÚMERO DE PÁGINA
 // ============================================================
 function addPageNumber(doc, pageNum) {
-  // Posición absoluta garantizada — save/restore para no afectar al cursor de texto
-  doc.save();
-  doc.font("Helvetica").fontSize(9).fillColor(COLOR_MUTED)
-     .text(String(pageNum), 0, H - MARGIN + 8, {
-       width: W, align: "center", lineBreak: false
-     });
-  doc.restore();
+  // PDFKit: save/restore NO restaura el cursor de texto.
+  // Solución: mover manualmente el cursor al pie ANTES de llamar text()
+  // y luego dejarlo donde estaba (no importa, la página ya está hecha).
+  // Usamos moveDown(0) + y explícito para forzar posición absoluta.
+  doc.font("Helvetica").fontSize(9).fillColor(COLOR_MUTED);
+  // Calcular Y del pie: H - 20pt (dentro del margen inferior)
+  const pageNumY = H - 24;
+  doc.text(String(pageNum), 0, pageNumY, {
+    width: W,
+    align: "center",
+    lineBreak: false
+  });
+  // Restaurar color para lo que venga después
+  doc.fillColor("#000000");
 }
 
 // ============================================================
