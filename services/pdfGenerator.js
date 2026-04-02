@@ -249,39 +249,57 @@ async function addStoryPage(doc, page, settings) {
   // FIX: dividir primero por saltos de línea, y si viene en bloque
   // dividir por punto + espacio + mayúscula para lectura en voz alta
   const rawText = (page.text || "").trim();
-
-  // Unir todas las frases en UN SOLO BLOQUE de texto para maximizar el espacio
-  // Las frases sueltas con salto de línea consumen 6pt extra cada una (19.5pt/frase vs 13.5pt/línea)
-  // Unidas como párrafo continuo caben ~84 palabras vs ~58 con frases sueltas
-  const unified = rawText
-    .split(/\n+/)
-    .map(p => p.trim())
-    .filter(p => p.length > 0)
-    .join(" "); // unir en párrafo continuo
-
-  const textW    = W - MARGIN * 2 - 28;
-  const maxTextY = H - MARGIN - 50;
+  const textW      = W - MARGIN * 2 - 28;
+  const maxTextY   = H - MARGIN - 50;
   const storyFontSize = 11.5;
+  const paraGap    = 8;  // espacio entre los 2 párrafos
+
+  // Separar en párrafos (líneas en blanco como separador)
+  let paragraphs = rawText
+    .split(/\n{2,}/)
+    .map(p => p.replace(/\n/g, " ").trim())
+    .filter(p => p.length > 0);
+
+  // Si solo hay 1 bloque, intentar dividirlo en 2 por el punto medio
+  if (paragraphs.length === 1 && paragraphs[0].length > 40) {
+    const sentences = paragraphs[0].split(/(?<=[.!?])\s+/);
+    const mid = Math.ceil(sentences.length / 2);
+    const p1 = sentences.slice(0, mid).join(" ");
+    const p2 = sentences.slice(mid).join(" ");
+    if (p2.length > 0) paragraphs = [p1, p2];
+  }
 
   doc.font("Helvetica").fontSize(storyFontSize).fillColor(COLOR_TEXT);
 
-  // Medir si el bloque completo cabe
-  const fullH = doc.heightOfString(unified, { width: textW });
-  const availH = maxTextY - (textY + 12);
+  let curY = textY + 12;
+  const availH = maxTextY - curY;
 
-  if (fullH <= availH) {
-    // Cabe todo — dibujar en bloque
-    doc.text(unified, MARGIN + 14, textY + 12, { width: textW, align: "left", lineGap: 3 });
-  } else {
-    // No cabe todo — truncar por palabras hasta el límite
-    const words = unified.split(" ");
-    let partial = "";
-    for (const word of words) {
-      const test = partial ? partial + " " + word : word;
-      if (doc.heightOfString(test, { width: textW }) > availH) break;
-      partial = test;
+  for (let i = 0; i < paragraphs.length; i++) {
+    if (curY >= maxTextY) break;
+    const para = paragraphs[i];
+    const remainH = maxTextY - curY;
+    // Espacio que queda para este párrafo (dejar hueco para el siguiente si hay)
+    const spaceForThis = i < paragraphs.length - 1
+      ? remainH - paraGap - storyFontSize * 2  // dejar mínimo 2 líneas para el siguiente
+      : remainH;
+
+    const paraH = doc.heightOfString(para, { width: textW });
+
+    if (paraH <= spaceForThis) {
+      doc.text(para, MARGIN + 14, curY, { width: textW, align: "left", lineGap: 3 });
+      curY = doc.y + paraGap;
+    } else {
+      // Truncar por palabras
+      const words = para.split(" ");
+      let partial = "";
+      for (const word of words) {
+        const test = partial ? partial + " " + word : word;
+        if (doc.heightOfString(test, { width: textW }) > spaceForThis) break;
+        partial = test;
+      }
+      if (partial) doc.text(partial, MARGIN + 14, curY, { width: textW, align: "left", lineGap: 3 });
+      break;
     }
-    doc.text(partial, MARGIN + 14, textY + 12, { width: textW, align: "left", lineGap: 3 });
   }
 }
 
