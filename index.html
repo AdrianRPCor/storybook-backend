@@ -1123,6 +1123,7 @@ function getPageLabel(page) {
   const labels = {
     cover:        "📘 Portada del libro",
     blank:        "⬜ Página en blanco",
+    "title-page":  "📖 Página de título",
     index:        "📑 Índice",
     closing:      "🌈 Página final emocional",
     "adult-guide":"📗 Guía para quien acompaña",
@@ -1144,7 +1145,7 @@ function selectBookPage(pageId) {
   document.querySelectorAll(".sbk__item").forEach(el => el.classList.remove("sbk__item--active"));
   const active = document.querySelector(`[data-page-id="${pageId}"]`);
   if (active) active.classList.add("sbk__item--active");
-  const modeMap = { cover:"cover", "story-cover":"cover", index:"index", closing:"closing", "adult-guide":"adult", ngo:"ngo" };
+  const modeMap = { cover:"cover", "story-cover":"cover", index:"index", closing:"closing", "adult-guide":"adult", ngo:"ngo", "title-page":"title" };
   setEditorMode(modeMap[page.type] || "story");
   loadPageIntoEditor(page);
   saveProject();
@@ -1160,11 +1161,14 @@ function generateBookStructure() {
   const pagesPerStory = Number(bookData.settings.pagesPerStory);
   let order = 0;
 
-  // Portada
-  bookData.pages.push({ id:uid(), type:"cover", title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, backImagePrompt:"", backImageUrl:null, order:order++ });
-  bookData.pages.push({ id:uid(), type:"blank", color:bookData.settings.blankPageColor, order:order++ }); // verso portada
-  bookData.pages.push({ id:uid(), type:"index", text:"", imagePrompt:"", imageUrl:null, order:order++ });
-  // Sin blank tras índice — los cuentos empiezan directamente
+  // Estructura KDP estándar:
+  // 1. Portada | 2. Blanco | 3. Página de título | 4. Blanco | 5. Índice | 6. Blanco | 7. Portada cuento 1...
+  bookData.pages.push({ id:uid(), type:"cover",      title:"", subtitle:"", backText:"", imagePrompt:"", imageUrl:null, backImagePrompt:"", backImageUrl:null, order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
+  bookData.pages.push({ id:uid(), type:"title-page", order:order++ }); // página de título centrado
+  bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
+  bookData.pages.push({ id:uid(), type:"index",      text:"", imagePrompt:"", imageUrl:null, order:order++ });
+  bookData.pages.push({ id:uid(), type:"blank",      color:bookData.settings.blankPageColor, order:order++ });
 
   // Cuentos
   for (let i = 0; i < numStories; i++) {
