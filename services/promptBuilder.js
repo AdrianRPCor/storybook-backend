@@ -91,20 +91,22 @@ No inventes títulos nuevos.
     story: `
 Continúa el cuento "${storyTitle || "Historia"}".
 
-REGLAS ESTRICTAS DE FORMATO:
-- Escribe cada frase o idea en UNA línea separada (salto de línea entre cada frase).
-- Máximo 2-3 frases por párrafo.
-- Deja una línea en blanco entre párrafos.
-- Frases cortas, claras, fáciles de leer en voz alta.
-- No uses puntos y seguido para unir muchas ideas en una frase larga.
+FORMATO OBLIGATORIO — 3 párrafos separados por LÍNEA EN BLANCO:
 
-REGLAS NARRATIVAS:
-- No reinicies la historia ni repitas lo anterior.
-- Avanza la narrativa.
-- Objetivo de esta página: ${nextPageGoal || "Desarrollo narrativo"}
+Párrafo 1: 2 frases cortas sobre una acción o emoción.
 
-Texto anterior:
-"${previousPageText || ""}"
+Párrafo 2: 2 frases que desarrollan la situación. Si hay diálogo, usa raya (—) al inicio.
+
+Párrafo 3: 2 frases que avanzan hacia el desenlace.
+
+REGLAS:
+- Cada párrafo separado por una línea en blanco (\n\n).
+- NO uses saltos de línea dentro de un párrafo.
+- Frases cortas (máximo 10 palabras).
+- No reinicies ni repitas lo anterior.
+- Objetivo: ${nextPageGoal || "Desarrollo narrativo"}
+
+Texto anterior: "${previousPageText || "(inicio del cuento)"}"
 `.trim(),
 
     closing: `

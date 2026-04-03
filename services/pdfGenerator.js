@@ -255,19 +255,41 @@ async function addStoryPage(doc, page, settings) {
   const storyFontSize = 11.5;
   const paraGap    = 8;  // espacio entre los 2 párrafos
 
-  // Separar en párrafos (líneas en blanco como separador)
+  // Separar en párrafos — aceptar 
+
+ o 
+ simple como separador
   let paragraphs = rawText
-    .split(/\n{2,}/)
-    .map(p => p.replace(/\n/g, " ").trim())
+    .split(/\n{2,}/)                          // separar por línea en blanco
+    .map(p => p.replace(/\n/g, " ").trim())   // unir líneas internas
     .filter(p => p.length > 0);
 
-  // Si solo hay 1 bloque, intentar dividirlo en 2 por el punto medio
-  if (paragraphs.length === 1 && paragraphs[0].length > 40) {
-    const sentences = paragraphs[0].split(/(?<=[.!?])\s+/);
+  // Si solo vino 1 bloque (la IA usó 
+ simple en lugar de 
+
+),
+  // dividir por frases completas en grupos de 2
+  if (paragraphs.length === 1 && rawText.includes("\n")) {
+    const lines = rawText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length >= 4) {
+      // Agrupar en grupos de 2 líneas
+      const grouped = [];
+      for (let i = 0; i < lines.length; i += 2) {
+        grouped.push(lines.slice(i, i+2).join(" "));
+      }
+      paragraphs = grouped;
+    } else if (lines.length > 1) {
+      paragraphs = lines;
+    }
+  }
+
+  // Fallback: si sigue siendo 1 párrafo largo, dividir por punto medio
+  if (paragraphs.length === 1 && paragraphs[0].length > 60) {
+    const sentences = paragraphs[0].split(/(?<=[.!?¡¿])\s+/);
     const mid = Math.ceil(sentences.length / 2);
     const p1 = sentences.slice(0, mid).join(" ");
     const p2 = sentences.slice(mid).join(" ");
-    if (p2.length > 0) paragraphs = [p1, p2];
+    if (p2.trim().length > 0) paragraphs = [p1.trim(), p2.trim()];
   }
 
   doc.font("Helvetica").fontSize(storyFontSize).fillColor(COLOR_TEXT);
