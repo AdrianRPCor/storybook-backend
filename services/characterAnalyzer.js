@@ -34,24 +34,24 @@ ${palette ? `Paleta de color: ${palette}` : ""}
 Genera el bloque técnico en inglés para que este personaje sea siempre idéntico en todas las ilustraciones.`;
 
   try {
-    console.log(`🔍 Analizando personaje: ${name}`);
+    console.log(`🔍 Analizando personaje: ${name}, imageUrl: ${imageUrl?.slice(0,60)}`);
+
+    // Construir el content con imagen
+    // GPT-4o Vision acepta URLs directas o base64
+    const imageContent = imageUrl.startsWith("data:")
+      ? { type: "image_url", image_url: { url: imageUrl, detail: "high" } }
+      : { type: "image_url", image_url: { url: imageUrl, detail: "high" } };
 
     const response = await client.chat.completions.create({
       model: "gpt-4o",
-      max_tokens: 400,
+      max_tokens: 500,
       messages: [
         { role: "system", content: systemPrompt },
         {
           role: "user",
           content: [
             { type: "text", text: userMessage },
-            {
-              type: "image_url",
-              image_url: {
-                url: imageUrl,
-                detail: "high"
-              }
-            }
+            imageContent
           ]
         }
       ]

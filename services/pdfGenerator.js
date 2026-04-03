@@ -206,12 +206,25 @@ async function addStoryCoverPage(doc, page, storyIndex) {
     doc.circle(W * 0.1, H * 0.8,  50).fill("rgba(255,255,255,0.04)");
   }
 
-  doc.font("Helvetica").fontSize(11).fillColor("rgba(255,255,255,0.6)")
-     .text(`Cuento ${storyIndex + 1}`, 0, H * 0.72 + 10, { width: W, align: "center" });
+  // Calcular altura del título para el recuadro
+  doc.font("Helvetica-Bold").fontSize(22);
+  const stCoverTitleH = doc.heightOfString(page.title || `Cuento ${storyIndex + 1}`, { width: W - MARGIN * 2 - 20 });
+  const stCoverBoxY = H * 0.72 + 6;
+  const stCoverBoxH = stCoverTitleH + 28;
 
-  doc.font("Helvetica-Bold").fontSize(24).fillColor("#ffffff")
-     .text(page.title || `Cuento ${storyIndex + 1}`, MARGIN, H * 0.72 + 30, {
-       width: W - MARGIN * 2, align: "center", lineGap: 3
+  // Recuadro semitransparente detrás del título (igual que portada del libro)
+  doc.save();
+  doc.fillColor("#000000").fillOpacity(0.45);
+  doc.roundedRect(MARGIN, stCoverBoxY, W - MARGIN * 2, stCoverBoxH, 6).fill();
+  doc.restore();
+
+  doc.fillColor("#ffffff").fillOpacity(1)
+     .font("Helvetica").fontSize(10)
+     .text(`Cuento ${storyIndex + 1}`, 0, stCoverBoxY + 6, { width: W, align: "center" });
+
+  doc.font("Helvetica-Bold").fontSize(22).fillColor("#ffffff")
+     .text(page.title || `Cuento ${storyIndex + 1}`, MARGIN + 10, stCoverBoxY + 20, {
+       width: W - MARGIN * 2 - 20, align: "center", lineGap: 3
      });
 }
 
@@ -604,7 +617,8 @@ export async function generateCoverPdf(bookData) {
   }
 
   // ── LOMO ──
-  const spineColor = bookData?.settings?.spineColor || "#1e3a5f";
+  const spineColor     = bookData?.settings?.spineColor     || "#1e3a5f";
+  const spineTextColor = bookData?.settings?.spineTextColor || "#ffffff";
   doc.rect(spineX, BLEED, spineWidth, TRIM_H).fill(spineColor);
 
   if (spineWidth > 6 && spineText) {
@@ -615,7 +629,7 @@ export async function generateCoverPdf(bookData) {
     doc.save();
     doc.translate(spineX + spineWidth / 2, BLEED + TRIM_H / 2);
     doc.rotate(-90);
-    doc.font("Helvetica-Bold").fontSize(spineFontSize).fillColor("#ffffff")
+    doc.font("Helvetica-Bold").fontSize(spineFontSize).fillColor(spineTextColor)
        .text(spineText, -TRIM_H / 2 + 20, -spineFontSize / 2, {
          width: TRIM_H - 40, align: "center"
        });
