@@ -1125,8 +1125,8 @@ function bindCoverPanel() {
   document.getElementById("sbk-regen-cover-front")?.addEventListener("click", async () => {
     const cp = bookData.pages.find(p => p.type==="cover"); if(!cp) return;
     if (!cp.imagePrompt) {
-      const chars=(bookData.characters?.global||[]).map(c=>`${c.name}: ${c.description}`).join(". ");
-      cp.imagePrompt = `Children's book FRONT COVER illustration. Vertical 6x9. Theme: ${bookData.meta.bookTitle}. Characters: ${chars||"infantile"}. NO TEXT.`;
+      const charsFront=(bookData.characters?.global||[]).map(c=>c.promptDescription||`${c.name}: ${c.description}`).join(". ");
+      cp.imagePrompt = `Professional children's book FRONT COVER. Vertical 6x9 inches. Style: ${bookData.settings.visualStyle}. Theme: ${bookData.meta.bookTitle}. ${charsFront ? "CHARACTERS: " + charsFront : ""}. Warm colors, inviting. NO TEXT IN IMAGE.`;
       document.getElementById("sbk-cover-front-prompt").value = cp.imagePrompt;
     }
     try {
@@ -1143,8 +1143,8 @@ function bindCoverPanel() {
   document.getElementById("sbk-regen-cover-back")?.addEventListener("click", async () => {
     const cp = bookData.pages.find(p => p.type==="cover"); if(!cp) return;
     if (!cp.backImagePrompt) {
-      const chars=(bookData.characters?.global||[]).map(c=>`${c.name}: ${c.description}`).join(". ");
-      cp.backImagePrompt = `Children's book BACK COVER illustration. Vertical 6x9. Top 40% clear for text. Characters smiling. Theme: ${bookData.meta.bookTitle}. NO TEXT.`;
+      const charsBack=(bookData.characters?.global||[]).map(c=>c.promptDescription||`${c.name}: ${c.description}`).join(". ");
+      cp.backImagePrompt = `Professional children's book BACK COVER illustration. Vertical 6x9 inches. IMPORTANT: top 45% of image must be a soft blurred background with NO characters (space for text overlay). Characters are placed ONLY in the bottom 55%. Style: ${bookData.settings.visualStyle}. ${charsBack ? "CHARACTERS smiling at bottom: " + charsBack : ""}. NO TEXT IN IMAGE.`;
       document.getElementById("sbk-cover-back-prompt").value = cp.backImagePrompt;
     }
     try {
@@ -1533,6 +1533,13 @@ async function generateFullBookTextOnly() {
         if (idx !== -1) { bookData.stories[idx].title = text.trim(); bookData.settings.storyTitles[idx] = text.trim(); }
       } else {
         page.text = text;
+        // Si esta es la página actualmente visible, refrescar el editor
+        if (editorState.currentPageId === page.id) {
+          const ta = document.getElementById("sbk-editor-text");
+          if (ta) { ta.value = text; updateWordCount(text, page.type); }
+          const tp = document.getElementById("sbk-text-preview");
+          if (tp) tp.textContent = text;
+        }
       }
       done++;
       const _lbl = page.type==="cover" ? "Portada del libro" :
@@ -1593,8 +1600,28 @@ async function generateImagesForWholeBook() {
   const btn = document.getElementById("sbk-generate-images");
   setButtonLoading(btn, true, "Generando imágenes...");
 
-  const pagesToProcess = bookData.pages.filter(p => ["cover","story-cover","story","closing"].includes(p.type) && p.text);
+  const pagesToProcess = bookData.pages.filter(p => ["cover","story-cover","story","closing"].includes(p.type));
   let done = 0;
+  const totalImgs = pagesToProcess.length + 1; // +1 para contraportada
+
+  // Generar imagen de contraportada primero si hay cover
+  const coverPage = bookData.pages.find(p => p.type === "cover");
+  if (coverPage) {
+    const charsBack = (bookData.characters?.global||[]).map(c=>c.promptDescription||`${c.name}: ${c.description}`).join(". ");
+    if (!coverPage.backImagePrompt) {
+      coverPage.backImagePrompt = `Professional children's book BACK COVER illustration. Vertical 6x9 inches. IMPORTANT: top 45% must be soft blurred background with NO characters. Characters ONLY in bottom 55%. Style: ${bookData.settings.visualStyle}. ${charsBack ? "CHARACTERS smiling at bottom: " + charsBack : ""}. NO TEXT IN IMAGE.`;
+    }
+    try {
+      setProgress(2, "🎨 Generando imágenes…", "Contraportada");
+      const backUrl = await generateImageFromAPI(coverPage.backImagePrompt, false);
+      coverPage.backImageUrl = backUrl;
+      const backImg = document.getElementById("sbk-back-img");
+      if (backImg) { backImg.src = backUrl; backImg.style.display = "block"; }
+      const backFill = document.getElementById("sbk-cover-back-fill");
+      if (backFill) backFill.style.background = "transparent";
+      done++;
+    } catch(e) { console.error("❌ Error imagen contraportada:", e); }
+  }
 
   for (const page of pagesToProcess) {
     if (!page.imagePrompt) page.imagePrompt = buildImagePromptFromPage(page);
@@ -1624,7 +1651,14 @@ async function generateImagesForWholeBook() {
 
 function buildImagePromptFromPage(page) {
   const story = page.storyId ? bookData.stories.find(s => s.id === page.storyId) : null;
-  return `Ilustración infantil profesional para libro KDP. Estilo: ${bookData.settings.visualStyle}. Paleta: ${bookData.settings.palette}. Tema: ${story?.theme || "emoción infantil"}. Escena: "${(page.text || "").slice(0, 200)}". Sin texto, formato vertical, fondo limpio.`;
+  // Usar promptDescription técnico si está disponible, si no usar descripción simple
+  const chars = (bookData.characters?.global || []);
+  const charBlock = chars.length
+    ? chars.map(c => c.promptDescription || `${c.name}: ${c.description}`).join(". ")
+    : "";
+  const charSuffix = charBlock ? `CHARACTERS: ${charBlock}.` : "";
+  const sceneText = (page.text || "").slice(0, 150);
+  return `Professional children's book illustration. Style: ${bookData.settings.visualStyle}. Palette: ${bookData.settings.palette}. Theme: ${story?.theme || "childhood emotion"}. Scene: "${sceneText}". ${charSuffix} No text in image. Vertical format. Clean background.`;
 }
 
 // ============================================================
