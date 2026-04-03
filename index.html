@@ -365,8 +365,9 @@
                   <div class="sbk__pageTextPreview" id="sbk-text-preview"></div>
                   <div id="sbk-page-num-preview" style="position:absolute;bottom:3%;width:100%;text-align:center;font-size:9px;color:#9ca3af;left:0;"></div>
                 </div>
-                <div id="sbk-preview-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:center;font-size:12px;color:#64748b;border-radius:3px;">
-                  Generando preview…
+                <div id="sbk-preview-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,0.85);flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#64748b;border-radius:3px;gap:8px;">
+                  <div style="width:20px;height:20px;border:2px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:sbk-spin .7s linear infinite;"></div>
+                  <span>Generando preview…</span>
                 </div>
               </div>
 
@@ -1125,10 +1126,24 @@ async function renderPagePreview(page) {
     return;
   }
 
-  // Portada del libro — usar el spread (no el canvas)
+  // Portada del libro — usar el spread KDP (no el canvas)
   if (page.type === "cover") {
     canvas.style.display = "none";
     if (fallback) fallback.style.display = "";
+    if (loading) loading.style.display = "none";
+    return;
+  }
+
+  // Página en blanco — mostrar canvas blanco simple
+  if (page.type === "blank") {
+    canvas.style.display = "block";
+    if (fallback) fallback.style.display = "none";
+    if (loading) loading.style.display = "none";
+    const ctx = canvas.getContext("2d");
+    canvas.width  = 420;
+    canvas.height = 630; // ratio 2:3
+    ctx.fillStyle = page.color || bookData.settings?.blankPageColor || "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     return;
   }
 
@@ -1150,10 +1165,46 @@ async function renderPagePreview(page) {
     characters: bookData.characters
   };
 
-  // Calcular el índice de esta página en el PDF (excluyendo blanks)
-  const pdfPageIndex = bookData.pages
-    .filter(p => p.type !== "blank" && p.order <= page.order)
-    .length;
+  // Calcular el índice de esta página en el PDF
+  // Replicando EXACTAMENTE la lógica del pdfGenerator:
+  // - cover: se ignora (continue), no genera página PDF
+  // - blank: solo los válidos (tras title-page, index, o último) generan página
+  // - todos los demás: generan 1 página PDF
+  function calcPdfPageIndex(targetPage) {
+    const sorted = [...bookData.pages].sort((a,b) => a.order - b.order);
+
+    // Calcular qué blanks son válidos (igual que pdfGenerator)
+    const validBlanks = new Set();
+    sorted.forEach((p, i) => {
+      if (p.type === "blank") {
+        const prev = sorted[i-1];
+        const next = sorted[i+1];
+        if (["title-page","index"].includes(prev?.type) || !next) {
+          validBlanks.add(p.id);
+        }
+      }
+    });
+
+    let pdfPage = 0;
+    for (const p of sorted) {
+      if (p.type === "blank") {
+        if (validBlanks.has(p.id)) pdfPage++;
+        // si llegamos a target y es blank válido, ya contamos
+        if (p.id === targetPage.id) return pdfPage;
+        continue;
+      }
+      if (p.type === "cover") {
+        // cover se salta — no genera página PDF
+        if (p.id === targetPage.id) return pdfPage; // cover no tiene página PDF
+        continue;
+      }
+      pdfPage++;
+      if (p.id === targetPage.id) return pdfPage;
+    }
+    return pdfPage;
+  }
+
+  const pdfPageIndex = calcPdfPageIndex(page);
 
   try {
     const res = await fetch(`${API_BASE}/export/pdf/interior`, {
