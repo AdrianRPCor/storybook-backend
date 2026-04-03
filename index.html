@@ -168,7 +168,7 @@
 .sbk__coverBackFill{position:absolute;inset:0;background:rgba(30,58,95,0.85)}
 .sbk__coverBackTextBox{position:absolute;top:10px;left:10px;right:10px;background:rgba(0,0,0,0.5);border-radius:5px;padding:8px 10px}
 .sbk__coverBackText{font-size:7px!important;line-height:1.5;color:rgba(255,255,255,0.92)!important;font-style:italic;margin:0}
-.sbk__spineText{writing-mode:vertical-rl;transform:rotate(180deg);font-size:6px;font-weight:600;color:rgba(255,255,255,0.85);letter-spacing:0.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:86%;text-align:center}
+.sbk__spineText{writing-mode:vertical-rl;transform:rotate(180deg);font-size:6px;font-weight:600;color:var(--spine-text-color,rgba(255,255,255,0.85));letter-spacing:0.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:86%;text-align:center}
 .sbk__coverZoneLabel{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:6px;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap}
 .sbk__coverDimsBar{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted);background:#f9fafb;border:1px solid var(--line);border-radius:8px;padding:5px 10px;width:100%;justify-content:center;margin-top:8px}
 .sbk__coverDimsBar b{color:var(--text);font-weight:600}
@@ -419,6 +419,9 @@
                     </label>
                     <label class="sbk__label">Color del lomo
                       <input class="sbk__input" id="sbk-cover-spine-color-edit" type="color" value="#1e3a5f" style="padding:2px;height:34px;cursor:pointer">
+                    </label>
+                    <label class="sbk__label">Color texto del lomo
+                      <input class="sbk__input" id="sbk-cover-spine-text-color-edit" type="color" value="#ffffff" style="padding:2px;height:34px;cursor:pointer">
                     </label>
                     <label class="sbk__label sbk__label--full">Texto de contraportada
                       <textarea class="sbk__textarea" id="sbk-cover-back-edit" rows="3" placeholder="Texto breve para la contraportada…"></textarea>
@@ -933,6 +936,9 @@ function renderCoverSpread(page) {
 
   const spineEl = document.getElementById("sbk-cover-spine");
   if (spineEl) spineEl.style.background = spineColor;
+  const spineTextColor = bookData.settings?.spineTextColor || "#ffffff";
+  const spineTextEl = document.getElementById("sbk-spine-text-preview");
+  if (spineTextEl) spineTextEl.style.color = spineTextColor;
 
   // Dimensiones lomo
   const realPageCount = bookData.pages.length || 68;
@@ -967,6 +973,8 @@ function renderCoverSpread(page) {
   sv("sbk-cover-back-prompt",   page?.backImagePrompt || "");
   const scEl = document.getElementById("sbk-cover-spine-color-edit");
   if (scEl) scEl.value = spineColor;
+  const stcEl = document.getElementById("sbk-cover-spine-text-color-edit");
+  if (stcEl) stcEl.value = bookData.settings?.spineTextColor || "#ffffff";
 }
 
 function loadPageIntoEditor(page) {
@@ -1093,6 +1101,13 @@ function bindCoverPanel() {
     bookData.settings.spineColor = e.target.value;
     const el = document.getElementById("sbk-cover-spine");
     if (el) el.style.background = e.target.value;
+    saveProject();
+  });
+  cb("sbk-cover-spine-text-color-edit", e => {
+    if (!bookData.settings) bookData.settings = {};
+    bookData.settings.spineTextColor = e.target.value;
+    const el = document.getElementById("sbk-spine-text-preview");
+    if (el) el.style.color = e.target.value;
     saveProject();
   });
   cb("sbk-cover-front-prompt", e => {
