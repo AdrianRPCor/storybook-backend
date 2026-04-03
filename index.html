@@ -182,6 +182,13 @@
 #sbk-word-count.over { background:#fee2e2 !important; border-color:#fca5a5 !important; color:#dc2626 !important; font-weight:700; }
 #sbk-word-count.warn { background:#fef9c3 !important; border-color:#fde047 !important; color:#ca8a04 !important; }
 </style>
+  <!-- PDF.js para preview fiel al PDF real -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
 </head>
 <body style="background:#f5f7fb">
 
@@ -349,11 +356,18 @@
 
           <div class="sbk__editorBody">
             <div class="sbk__gridEditor">
-              <!-- PÁGINA NORMAL -->
-              <div class="sbk__pageMock" id="sbk-page-mock">
+              <!-- PREVIEW REAL (canvas PDF.js) -->
+              <div style="position:relative;width:420px;max-width:90%;margin:0 auto;">
+                <canvas id="sbk-pdf-canvas" style="width:100%;height:auto;display:block;border:1px solid #ddd;box-shadow:0 10px 30px rgba(0,0,0,0.08);border-radius:3px;"></canvas>
+                <!-- Fallback mientras carga o si no hay PDF.js -->
+                <div class="sbk__pageMock" id="sbk-page-mock" style="display:none;">
                   <div class="sbk__imgMock" id="sbk-img-mock">Imagen</div>
                   <div class="sbk__pageTextPreview" id="sbk-text-preview"></div>
                   <div id="sbk-page-num-preview" style="position:absolute;bottom:3%;width:100%;text-align:center;font-size:9px;color:#9ca3af;left:0;"></div>
+                </div>
+                <div id="sbk-preview-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:center;font-size:12px;color:#64748b;border-radius:3px;">
+                  Generando preview…
+                </div>
               </div>
 
               <!-- SPREAD PORTADA KDP -->
@@ -1092,6 +1106,103 @@ function esc(str) {
   return (str || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
+
+// ============================================================
+//  PREVIEW REAL DE PÁGINA — usa PDF.js para renderizar
+//  exactamente lo que generará el PDF
+// ============================================================
+let _previewAbortController = null;
+let _previewDebounceTimer   = null;
+
+async function renderPagePreview(page) {
+  const canvas  = document.getElementById("sbk-pdf-canvas");
+  const loading = document.getElementById("sbk-preview-loading");
+  const fallback= document.getElementById("sbk-page-mock");
+
+  // Si no hay PDF.js, usar fallback
+  if (typeof pdfjsLib === "undefined" || !canvas) {
+    if (fallback) fallback.style.display = "";
+    return;
+  }
+
+  // Portada del libro — usar el spread (no el canvas)
+  if (page.type === "cover") {
+    canvas.style.display = "none";
+    if (fallback) fallback.style.display = "";
+    return;
+  }
+
+  canvas.style.display = "block";
+  if (fallback) fallback.style.display = "none";
+  if (loading) loading.style.display   = "flex";
+
+  // Cancelar petición anterior
+  if (_previewAbortController) _previewAbortController.abort();
+  _previewAbortController = new AbortController();
+
+  // Construir un bookData mínimo con solo esta página + las páginas necesarias
+  // para calcular el número de página correctamente
+  const minBookData = {
+    meta:     bookData.meta,
+    settings: bookData.settings,
+    stories:  bookData.stories,
+    pages:    bookData.pages, // necesitamos todas para calcular número de página
+    characters: bookData.characters
+  };
+
+  // Calcular el índice de esta página en el PDF (excluyendo blanks)
+  const pdfPageIndex = bookData.pages
+    .filter(p => p.type !== "blank" && p.order <= page.order)
+    .length;
+
+  try {
+    const res = await fetch(`${API_BASE}/export/pdf/interior`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(minBookData),
+      signal:  _previewAbortController.signal
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    const arrayBuffer = await res.arrayBuffer();
+
+    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    // Determinar qué página del PDF corresponde a esta page del libro
+    // El índice ya lo calculamos arriba
+    const pageNum = Math.min(pdfPageIndex, pdfDoc.numPages);
+    const pdfPage = await pdfDoc.getPage(pageNum);
+
+    // Escalar para que quepa en 420px de ancho
+    const viewport = pdfPage.getViewport({ scale: 1 });
+    const scale    = 420 / viewport.width;
+    const scaledVP = pdfPage.getViewport({ scale });
+
+    canvas.width  = scaledVP.width;
+    canvas.height = scaledVP.height;
+    canvas.style.height = "auto";
+
+    const ctx = canvas.getContext("2d");
+    await pdfPage.render({ canvasContext: ctx, viewport: scaledVP }).promise;
+
+    if (loading) loading.style.display = "none";
+
+  } catch (err) {
+    if (err.name === "AbortError") return; // cancelado
+    console.warn("Preview PDF error:", err.message);
+    // Mostrar fallback en caso de error
+    canvas.style.display = "none";
+    if (fallback) fallback.style.display = "";
+    if (loading) loading.style.display   = "none";
+  }
+}
+
+// Versión debounced para no llamar en cada keystroke
+function schedulePreview(page) {
+  clearTimeout(_previewDebounceTimer);
+  _previewDebounceTimer = setTimeout(() => renderPagePreview(page), 800);
+}
+
 // ============================================================
 //  CONTADOR DE PALABRAS — función global
 // ============================================================
@@ -1137,6 +1248,7 @@ function bindEditorPersistence() {
       }
     }
     saveProject();
+    schedulePreview(page); // actualizar preview al editar
   });
 
   promptArea.addEventListener("input", () => {
@@ -1198,6 +1310,8 @@ function selectBookPage(pageId) {
   setEditorMode(modeMap[page.type] || "story");
   loadPageIntoEditor(page);
   saveProject();
+  // Preview real del PDF (debounced 800ms)
+  schedulePreview(page);
 }
 
 // ============================================================
