@@ -197,9 +197,13 @@ async function addStoryCoverPage(doc, page, storyIndex) {
   const bgColor = colors[storyIndex % colors.length];
 
   if (imgBuf) {
-    doc.image(imgBuf, 0, 0, { width: W, height: H * 0.7, cover: [W, H * 0.7] });
-    doc.rect(0, H * 0.7, W, H * 0.3).fill(bgColor);
-    doc.rect(0, H * 0.6, W, H * 0.12).fill("rgba(0,0,0,0.15)");
+    // Imagen ocupa TODA la página
+    doc.save();
+    doc.rect(0, 0, W, H).clip();
+    doc.image(imgBuf, 0, 0, { cover: [W, H], align: "center", valign: "center" });
+    doc.restore();
+    // Gradiente oscuro en la parte inferior para que el recuadro de título se vea bien
+    doc.rect(0, H * 0.65, W, H * 0.35).fill("rgba(0,0,0,0.35)");
   } else {
     doc.rect(0, 0, W, H).fill(bgColor);
     doc.circle(W * 0.8, H * 0.15, 70).fill("rgba(255,255,255,0.06)");
@@ -209,7 +213,7 @@ async function addStoryCoverPage(doc, page, storyIndex) {
   // Calcular altura del título para el recuadro
   doc.font("Helvetica-Bold").fontSize(22);
   const stCoverTitleH = doc.heightOfString(page.title || `Cuento ${storyIndex + 1}`, { width: W - MARGIN * 2 - 20 });
-  const stCoverBoxY = H * 0.72 + 6;
+  const stCoverBoxY = H * 0.70;
   const stCoverBoxH = stCoverTitleH + 28;
 
   // Recuadro semitransparente detrás del título (igual que portada del libro)
@@ -374,8 +378,8 @@ async function addTextPage(doc, page, settings) {
     let morText = (page.text || "")
       .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
       .replace(/#+ /g, "").replace(/^[-•]\s*/gm, "").trim();
-    // Tomar solo el primer párrafo
-    morText = morText.split(/\n{2,}/)[0].replace(/\n/g, " ").trim();
+    // Unir todo el texto en un bloque continuo (sin saltos de línea)
+    morText = morText.replace(/\n+/g, " ").replace(/\s{2,}/g, " ").trim();
 
     const mTextW = W - MARGIN*2 - 28;
     doc.font("Helvetica-Oblique").fontSize(11.5).fillColor(COLOR_TEXT);
