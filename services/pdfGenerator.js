@@ -255,20 +255,13 @@ async function addStoryPage(doc, page, settings) {
   const storyFontSize = 11.5;
   const paraGap    = 8;  // espacio entre los 2 párrafos
 
-  // Separar en párrafos — aceptar 
-
- o 
- simple como separador
+  // Separar en parrafos (acepta doble o simple salto de linea)
   let paragraphs = rawText
-    .split(/\n{2,}/)                          // separar por línea en blanco
-    .map(p => p.replace(/\n/g, " ").trim())   // unir líneas internas
+    .split(/\n{2,}/)
+    .map(p => p.replace(/\n/g, " ").trim())
     .filter(p => p.length > 0);
 
-  // Si solo vino 1 bloque (la IA usó 
- simple en lugar de 
-
-),
-  // dividir por frases completas en grupos de 2
+  // Si solo hay 1 bloque, dividir por lineas simples
   if (paragraphs.length === 1 && rawText.includes("\n")) {
     const lines = rawText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length >= 4) {
