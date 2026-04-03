@@ -5,9 +5,10 @@ import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-import generateText  from "./routes/generateText.js";
-import generateImage from "./routes/generateImage.js";
-import exportPdf     from "./routes/exportPdf.js";
+import generateText      from "./routes/generateText.js";
+import generateImage    from "./routes/generateImage.js";
+import exportPdf        from "./routes/exportPdf.js";
+import analyzeCharacter from "./routes/analyzeCharacter.js";
 
 /* =========================
    ENV
@@ -67,6 +68,7 @@ app.get("/", (_, res) => {
 app.use("/api/v1/generation/chapter-content", generateText);
 app.use("/api/v1/generation/scene",           generateImage);
 app.use("/api/v1/export/pdf",                 exportPdf);
+app.use("/api/v1/character",                  analyzeCharacter);
 
 /* =========================
    ERROR GLOBAL

@@ -676,35 +676,76 @@ function renderCharacters() {
   if (!container) return;
   container.innerHTML = "";
   const list = bookData.characters.global || [];
-  list.forEach(char => {
+  list.forEach((char, idx) => {
     const card = document.createElement("div");
     card.className = "sbk__characterCard";
 
+    // ── Imagen del personaje ──
     const image = document.createElement("div");
     image.className = "sbk__characterImage";
-    if (char.imageUrl) { image.style.backgroundImage = `url("${char.imageUrl}")`; }
+    if (char.imageUrl) { image.style.backgroundImage = `url("${char.imageUrl}")`; image.textContent = ""; }
     else { image.textContent = "Imagen personaje"; }
+
+    // ── Botones de imagen ──
+    const btnRow = document.createElement("div");
+    btnRow.style.cssText = "display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;";
 
     const regenBtn = document.createElement("button");
     regenBtn.className = "sbk__btn sbk__btn--small";
-    regenBtn.style.marginBottom = "8px";
-    regenBtn.textContent = "🎨 Regenerar imagen";
+    regenBtn.textContent = "🎨 Generar imagen";
     regenBtn.addEventListener("click", async () => {
-      const prompt = `Ilustración infantil personaje libro. Nombre: ${char.name}. Descripción: ${char.description}. Estilo: ${bookData.settings.visualStyle}. Paleta: ${bookData.settings.palette}. Fondo blanco limpio.`;
+      const pd = char.promptDescription;
+      const basePrompt = pd
+        ? `Children book illustration, white background, character sheet. ${pd}`
+        : `Ilustración infantil personaje libro. Nombre: ${char.name}. Descripción: ${char.description}. Estilo: ${bookData.settings.visualStyle}. Paleta: ${bookData.settings.palette}. Fondo blanco limpio.`;
       try {
         setButtonLoading(regenBtn, true, "Generando...");
-        const url = await generateImageFromAPI(prompt, false);
+        const url = await generateImageFromAPI(basePrompt, false);
         char.imageUrl = url;
         renderCharacters();
         saveProject();
         toast("Imagen del personaje generada ✅", "success");
-      } catch(e) {
-        toast("Error generando imagen del personaje", "error");
-      } finally {
-        setButtonLoading(regenBtn, false);
-      }
+      } catch(e) { toast("Error generando imagen", "error"); }
+      finally { setButtonLoading(regenBtn, false); }
     });
 
+    // ── Botón analizar imagen → prompt técnico ──
+    const analyzeBtn = document.createElement("button");
+    analyzeBtn.className = "sbk__btn sbk__btn--small sbk__btn--primary";
+    analyzeBtn.title = "Analiza la imagen del personaje con IA y genera un prompt técnico para que sea siempre idéntico";
+    analyzeBtn.textContent = char.promptDescription ? "✨ Prompt generado" : "✨ Generar prompt técnico";
+    analyzeBtn.addEventListener("click", async () => {
+      if (!char.imageUrl && !char.description) {
+        toast("Primero añade una imagen o descripción del personaje", "error");
+        return;
+      }
+      try {
+        setButtonLoading(analyzeBtn, true, "Analizando...");
+        const res = await fetch(`${API_BASE}/character/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl:    char.imageUrl || null,
+            name:        char.name,
+            description: char.description,
+            style:       bookData.settings.visualStyle,
+            palette:     bookData.settings.palette
+          })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        char.promptDescription = data.promptDescription;
+        saveProject();
+        renderCharacters();
+        toast("✨ Prompt técnico generado — el personaje será idéntico en todas las imágenes", "success");
+      } catch(e) { toast("Error analizando personaje: " + e.message, "error"); }
+      finally { setButtonLoading(analyzeBtn, false); }
+    });
+
+    btnRow.appendChild(regenBtn);
+    btnRow.appendChild(analyzeBtn);
+
+    // ── Nombre ──
     const nameInput = document.createElement("input");
     nameInput.className = "sbk__input";
     nameInput.placeholder = "Nombre del personaje";
@@ -712,17 +753,39 @@ function renderCharacters() {
     nameInput.style.marginBottom = "6px";
     nameInput.addEventListener("input", () => { char.name = nameInput.value; saveProject(); });
 
+    // ── Descripción ──
     const descArea = document.createElement("textarea");
     descArea.className = "sbk__textarea";
     descArea.rows = 3;
-    descArea.placeholder = "Descripción física y personalidad";
+    descArea.placeholder = "Descripción física y personalidad (edad, rasgos, ropa habitual)";
     descArea.value = char.description || "";
     descArea.addEventListener("input", () => { char.description = descArea.value; saveProject(); });
 
+    // ── Prompt técnico (solo lectura, editable) ──
+    const promptLabel = document.createElement("div");
+    promptLabel.style.cssText = "font-size:10px;color:var(--muted);margin-top:8px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;";
+    const promptStatus = char.promptDescription
+      ? `<span style="color:#16a34a;font-weight:600;">✅ Prompt técnico activo</span>`
+      : `<span style="color:#9ca3af;">Sin prompt técnico — pulsa ✨</span>`;
+    promptLabel.innerHTML = `<span>Prompt de consistencia visual</span>${promptStatus}`;
+
+    const promptArea = document.createElement("textarea");
+    promptArea.className = "sbk__textarea";
+    promptArea.rows = 4;
+    promptArea.placeholder = "Pulsa ✨ Generar prompt técnico para que la IA analice la imagen y genere aquí el bloque de consistencia visual…";
+    promptArea.value = char.promptDescription || "";
+    promptArea.style.fontSize = "10px";
+    promptArea.style.color = "#374151";
+    promptArea.style.fontFamily = "monospace";
+    promptArea.style.display = char.promptDescription ? "block" : "none";
+    promptArea.addEventListener("input", () => { char.promptDescription = promptArea.value; saveProject(); });
+
     card.appendChild(image);
-    card.appendChild(regenBtn);
+    card.appendChild(btnRow);
     card.appendChild(nameInput);
     card.appendChild(descArea);
+    card.appendChild(promptLabel);
+    card.appendChild(promptArea);
     container.appendChild(card);
   });
 }
