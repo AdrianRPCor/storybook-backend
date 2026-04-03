@@ -379,14 +379,16 @@ async function addTextPage(doc, page, settings) {
 
     const mTextW = W - MARGIN*2 - 28;
     doc.font("Helvetica-Oblique").fontSize(11.5).fillColor(COLOR_TEXT);
-    const mTextH = doc.heightOfString(morText, { width: mTextW });
-    const mAvailH = textBoxH - 24;
-    const mTopPad = Math.max(0, (mAvailH - mTextH) / 2);
-    doc.text(morText, MARGIN + 14, textY + 12 + mTopPad, {
-      width: mTextW, align: "center", lineGap: 3
+    // Centrado vertical: calcular el padding superior para centrar el texto
+    const mTextH   = doc.heightOfString(morText, { width: mTextW });
+    const mAvailH  = textBoxH - 16; // espacio disponible dentro del recuadro
+    const mTopPad  = Math.max(8, Math.floor((mAvailH - mTextH) / 2));
+    const mStartY  = textY + mTopPad;
+    doc.text(morText, MARGIN + 14, mStartY, {
+      width: mTextW,
+      align: "center",
+      lineGap: 4
     });
-
-    addPageNumber(doc, 0); // sin número en moraleja (pasamos 0)
     return;
   }
 

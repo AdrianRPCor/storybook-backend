@@ -178,8 +178,9 @@ ${styleHints || ""}
 
 REGLAS FINALES:
 - Máximo ${maxWords || 120} palabras.
-- Devuelve SOLO el texto final. Sin títulos, sin explicaciones, sin comillas alrededor.
+- Devuelve SOLO el texto. Sin explicaciones adicionales. Sin comillas alrededor del texto.
 - Nunca uses markdown (**negrita**, *cursiva*, ## títulos).
-- Cada frase en su propia línea cuando el tipo sea "story".
+- Si el tipo es "cover": USA OBLIGATORIAMENTE los prefijos TÍTULO:, SUBTÍTULO:, CONTRAPORTADA: tal como se indica en las instrucciones de arriba.
+- Si el tipo es "story": cada frase en su propia línea.
 `.trim();
 }

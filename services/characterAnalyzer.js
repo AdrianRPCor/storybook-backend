@@ -8,30 +8,34 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function analyzeCharacterImage({ imageUrl, name, description, style, palette }) {
 
-  const systemPrompt = `Eres un experto en prompts de generación de imágenes para libros infantiles.
-Tu tarea es analizar la imagen de un personaje y generar un bloque de descripción técnica
-ultra-detallado que garantice que el personaje sea IDÉNTICO en todas las ilustraciones del libro.
+  const systemPrompt = `You are an expert in image generation prompts for children's illustrated books.
+IMPORTANT: This is a FICTIONAL ILLUSTRATED CHARACTER from a children's book, NOT a real person.
+This is cartoon/illustration artwork. Your task is to analyze the visual style and appearance
+of this illustrated character and generate a technical description block that ensures
+the character looks IDENTICAL in all book illustrations.
 
-El bloque debe ser en inglés (mejor rendimiento con modelos de imagen) y seguir este formato exacto:
+Generate the block in English using this exact format:
 
-CHARACTER: [nombre]
-APPEARANCE: [descripción completa: especie/tipo, edad aparente, género, complexión]
-FACE: [forma de cara, ojos (color, forma, tamaño), nariz, boca, expresión característica]
-HAIR/HEAD: [color, textura, longitud, estilo, orejas si son visibles]
-SKIN/FUR/COLOR: [tono de piel o color de pelaje/cuerpo exacto]
-OUTFIT: [ropa específica: colores, prendas, accesorios habituales]
-STYLE: [estilo de ilustración: cartoon suave, acuarela, etc.]
-CONSISTENCY NOTES: [rasgos únicos que deben mantenerse siempre]
+CHARACTER: [name]
+SPECIES/TYPE: [human child, animal, fantasy creature, etc — never say "person" or "human adult"]
+APPEARANCE: [age range, body type, size relative to story context]
+FACE: [eye color and shape, nose style, mouth, characteristic expression]
+HAIR/HEAD: [exact color, texture, length, style]
+SKIN/FUR/COLOR: [exact color tone]
+OUTFIT: [specific clothing items, colors, accessories]
+ART_STYLE: [soft cartoon, watercolor, digital illustration, etc.]
+UNIQUE_TRAITS: [distinctive features that must always appear]
 
-Sé extremadamente específico con los colores (usa nombres de color precisos).
-El bloque debe tener entre 80-120 palabras en inglés.`;
+Be extremely specific with colors. 80-120 words in English. This is illustration art, not photography.`;
 
-  const userMessage = `Analiza esta imagen del personaje "${name || "personaje"}" y genera el bloque de descripción técnica.
-${description ? `Descripción del creador: "${description}"` : ""}
-${style ? `Estilo visual del libro: ${style}` : ""}
-${palette ? `Paleta de color: ${palette}` : ""}
+  const userMessage = `This is a FICTIONAL ILLUSTRATED CHARACTER named "${name || "character"}" from a children's book.
+This is cartoon/illustration artwork, not a photo of a real person.
+${description ? `Creator description: "${description}"` : ""}
+${style ? `Book visual style: ${style}` : ""}
+${palette ? `Color palette: ${palette}` : ""}
 
-Genera el bloque técnico en inglés para que este personaje sea siempre idéntico en todas las ilustraciones.`;
+Analyze the illustration style and visual appearance of this fictional character.
+Generate the technical consistency block so this character looks identical in all book illustrations.`;
 
   try {
     console.log(`🔍 Analizando personaje: ${name}, imageUrl: ${imageUrl?.slice(0,60)}`);

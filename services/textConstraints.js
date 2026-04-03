@@ -13,11 +13,11 @@ export function getMaxWords({ pageType, ageTarget, pagesPerStory }) {
     ageTarget?.includes("7") ? 1.2  : 1.0;
 
   const base = {
-    cover:          150,   // TÍTULO + SUBTÍTULO + CONTRAPORTADA
+    cover:          200,   // TÍTULO + SUBTÍTULO + CONTRAPORTADA (necesita espacio suficiente)
     "story-cover":    8,   // Solo título corto
     index:          100,   // Lista de índice
     story:           65,   // 45-65 palabras: 3 párrafos × 2 frases cortas = ~60 palabras
-    closing:         75,   // Página final: 1 párrafo moraleja (3 frases) + cierre emocional
+    closing:         40,   // Moraleja: 1 párrafo, entre 30 y 40 palabras
     "adult-guide":  250,   // Página para padres/cuidadores con guía de lectura
     ngo:            120,   // Página entera sin imagen
     blank:            0
@@ -44,7 +44,7 @@ export function getStyleHints({ pageType, ageTarget }) {
     return "Escribe una guía práctica para el adulto que lee el cuento. Incluye: (1) qué emoción trabaja este cuento y por qué es importante, (2) en qué momentos es mejor leer este cuento al niño (hora del día, estado de ánimo), (3) cuándo NO es buen momento para leerlo, (4) 2-3 preguntas sencillas para hacer al niño durante la lectura. Tono cálido, empático, sin juzgar. Párrafos cortos. Sin viñetas ni listas con guiones.";
   }
   if (pageType === "closing") {
-    return `Escribe UN ÚNICO PÁRRAFO de 3-4 frases que funcione como moraleja del cuento. Muestra cómo el protagonista ha aprendido algo y cierra con una emoción positiva. El párrafo debe ser completo y tener sentido por sí solo. Sin saltos de línea dentro del párrafo. Máximo 75 palabras. Tono cálido, cercano, en tercera persona (siguiendo la voz del cuento).`;
+    return "Escribe UN ÚNICO PÁRRAFO de 3 frases exactas que sea la moraleja del cuento. Mínimo 30 palabras, máximo 40 palabras. Muestra qué aprendió el protagonista y cierra con emoción positiva. Sin saltos de línea. Tono cálido, en tercera persona, siguiendo la voz del cuento.";
   }
   if (pageType === "ngo") {
     return "Inspirador, breve, informativo. Tono humano y cercano.";
