@@ -1129,8 +1129,11 @@ async function renderPagePreview(page) {
   // Portada del libro — usar el spread KDP (no el canvas)
   if (page.type === "cover") {
     canvas.style.display = "none";
-    if (fallback) fallback.style.display = "";
+    if (fallback) fallback.style.display = "none"; // el spread ya se muestra via setEditorMode
     if (loading) loading.style.display = "none";
+    // Ocultar también el contenedor del canvas para que no ocupe espacio
+    const canvasWrap = canvas.parentElement;
+    if (canvasWrap) canvasWrap.style.display = "none";
     return;
   }
 
@@ -1139,6 +1142,8 @@ async function renderPagePreview(page) {
     canvas.style.display = "block";
     if (fallback) fallback.style.display = "none";
     if (loading) loading.style.display = "none";
+    const blankWrap = canvas.parentElement;
+    if (blankWrap) blankWrap.style.display = "";
     const ctx = canvas.getContext("2d");
     canvas.width  = 420;
     canvas.height = 630; // ratio 2:3
@@ -1150,6 +1155,9 @@ async function renderPagePreview(page) {
   canvas.style.display = "block";
   if (fallback) fallback.style.display = "none";
   if (loading) loading.style.display   = "flex";
+  // Asegurarse de que el contenedor del canvas sea visible
+  const canvasWrap2 = canvas.parentElement;
+  if (canvasWrap2) canvasWrap2.style.display = "";
 
   // Cancelar petición anterior
   if (_previewAbortController) _previewAbortController.abort();
