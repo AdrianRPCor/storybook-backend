@@ -350,6 +350,7 @@
             <div class="sbk__row">
               <button id="sbk-regen-text"  class="sbk__btn sbk__btn--small">✍️ Regenerar texto</button>
               <button id="sbk-regen-image" class="sbk__btn sbk__btn--small">🎨 Regenerar imagen</button>
+              <label  id="sbk-upload-image-label" class="sbk__btn sbk__btn--small" style="cursor:pointer;margin:0;" title="Subir imagen desde archivo">📁 Subir imagen<input type="file" accept="image/*" id="sbk-upload-image" style="display:none;"></label>
               <button id="sbk-save-page"   class="sbk__btn sbk__btn--small">💾 Guardar página</button>
             </div>
           </div>
@@ -1394,6 +1395,51 @@ function bindEditorPersistence() {
     page.imagePrompt = promptArea.value;
     saveProject();
   });
+
+  // Upload de imagen desde archivo
+  const uploadInput = document.getElementById("sbk-upload-image");
+  if (uploadInput) {
+    uploadInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const page = getCurrentPage();
+      if (!page) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const dataUrl = ev.target.result;
+        // Subir al backend para guardar en Cloudinary
+        try {
+          const res = await fetch(`${API_BASE}/generation/upload-image`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl })
+          });
+          if (!res.ok) {
+            // Si no hay endpoint de upload, usar dataUrl directamente
+            page.imageUrl = dataUrl;
+          } else {
+            const data = await res.json();
+            page.imageUrl = data.url || dataUrl;
+          }
+        } catch {
+          // Fallback: usar dataUrl directamente
+          page.imageUrl = dataUrl;
+        }
+        // Actualizar el preview
+        const imgMock = document.getElementById("sbk-img-mock");
+        if (imgMock) {
+          imgMock.style.backgroundImage = `url("${page.imageUrl}")`;
+          imgMock.style.backgroundSize  = "cover";
+          imgMock.textContent = "";
+        }
+        schedulePreview(page);
+        saveProject();
+        toast("📁 Imagen subida correctamente", "success");
+        uploadInput.value = ""; // reset para poder subir de nuevo
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 // ============================================================
@@ -1514,9 +1560,16 @@ async function generateFullBookTextOnly() {
         const backIdx      = lines.findIndex(l => /^CONTRAPORTADA\s*:/i.test(l));
         page.title    = (titleLine    || lines[0] || "").replace(/^T[IÍ]TULO\s*:/i, "").trim();
         page.subtitle = (subtitleLine || lines[1] || "").replace(/^SUBT[IÍ]TULO\s*:/i, "").trim();
-        page.backText = backIdx >= 0
-          ? lines.slice(backIdx + 1).join("\n").trim()
-          : lines.slice(2).join("\n").trim();
+        // La IA puede poner el texto en la misma línea: "CONTRAPORTADA: texto..."
+        // O en las líneas siguientes. Capturamos ambos casos.
+        if (backIdx >= 0) {
+          const backLine = lines[backIdx];
+          const inlinePart = backLine.replace(/^CONTRAPORTADA\s*:/i, "").trim();
+          const restLines  = lines.slice(backIdx + 1).join(" ").trim();
+          page.backText = (inlinePart + (restLines ? " " + restLines : "")).trim();
+        } else {
+          page.backText = lines.slice(2).join(" ").trim();
+        }
         page.text     = text;
         bookData.meta.bookTitle     = page.title;
         bookData.meta.bookSubtitle  = page.subtitle;

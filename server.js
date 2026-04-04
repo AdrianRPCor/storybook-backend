@@ -70,6 +70,25 @@ app.use("/api/v1/generation/scene",           generateImage);
 app.use("/api/v1/export/pdf",                 exportPdf);
 app.use("/api/v1/character",                  analyzeCharacter);
 
+// Upload de imagen desde dataUrl → Cloudinary
+app.post("/api/v1/generation/upload-image", async (req, res) => {
+  try {
+    const { dataUrl } = req.body;
+    if (!dataUrl) return res.status(400).json({ error: "Falta dataUrl" });
+    const { v2: cloudinary } = await import("cloudinary");
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key:    process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+    const result = await cloudinary.uploader.upload(dataUrl, { folder: "storybook" });
+    res.json({ url: result.secure_url });
+  } catch (err) {
+    console.error("❌ Upload imagen:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* =========================
    ERROR GLOBAL
 ========================= */
