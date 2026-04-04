@@ -202,8 +202,11 @@ async function addStoryCoverPage(doc, page, storyIndex) {
     doc.rect(0, 0, W, H).clip();
     doc.image(imgBuf, 0, 0, { cover: [W, H], align: "center", valign: "center" });
     doc.restore();
-    // Gradiente oscuro en la parte inferior para que el recuadro de título se vea bien
-    doc.rect(0, H * 0.65, W, H * 0.35).fill("rgba(0,0,0,0.35)");
+    // Gradiente oscuro sutil en la parte inferior (usa fillOpacity, PDFKit no soporta rgba en fill)
+    doc.save();
+    doc.fillColor("#000000").fillOpacity(0.25);
+    doc.rect(0, H * 0.65, W, H * 0.35).fill();
+    doc.restore();
   } else {
     doc.rect(0, 0, W, H).fill(bgColor);
     doc.circle(W * 0.8, H * 0.15, 70).fill("rgba(255,255,255,0.06)");
@@ -356,7 +359,7 @@ async function addTextPage(doc, page, settings) {
   if (page.type === "closing") {
     doc.rect(0, 0, W, H).fill(settings?.blankPageColor || "#ffffff");
     const imgBuf   = page.imageUrl ? await fetchImageBuffer(page.imageUrl) : null;
-    const imgAreaH = H * 0.75;
+    const imgAreaH  = H * 0.62; // igual que páginas de cuento
     const textAreaH = H - imgAreaH;
 
     if (imgBuf) {
