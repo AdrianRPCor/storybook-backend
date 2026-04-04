@@ -202,36 +202,28 @@ async function addStoryCoverPage(doc, page, storyIndex) {
     doc.rect(0, 0, W, H).clip();
     doc.image(imgBuf, 0, 0, { cover: [W, H], align: "center", valign: "center" });
     doc.restore();
-    // Gradiente oscuro sutil en la parte inferior (usa fillOpacity, PDFKit no soporta rgba en fill)
-    doc.save();
-    doc.fillColor("#000000").fillOpacity(0.25);
-    doc.rect(0, H * 0.65, W, H * 0.35).fill();
-    doc.restore();
   } else {
     doc.rect(0, 0, W, H).fill(bgColor);
     doc.circle(W * 0.8, H * 0.15, 70).fill("rgba(255,255,255,0.06)");
-    doc.circle(W * 0.1, H * 0.8,  50).fill("rgba(255,255,255,0.04)");
   }
 
-  // Calcular altura del título para el recuadro
-  doc.font("Helvetica-Bold").fontSize(22);
-  const stCoverTitleH = doc.heightOfString(page.title || `Cuento ${storyIndex + 1}`, { width: W - MARGIN * 2 - 20 });
-  const stCoverBoxY = H * 0.70;
-  const stCoverBoxH = stCoverTitleH + 28;
+  // Recuadro solo con el título — sin gradiente extra, sin "Cuento X"
+  const stTitle = page.title || `Cuento ${storyIndex + 1}`;
+  doc.font("Helvetica-Bold").fontSize(24);
+  const stCoverTitleH = doc.heightOfString(stTitle, { width: W - MARGIN * 2 - 24 });
+  const stCoverPad = 16;
+  const stCoverBoxH = stCoverTitleH + stCoverPad * 2;
+  const stCoverBoxY = H * 0.72 - stCoverBoxH / 2; // centrado verticalmente en 72%
 
-  // Recuadro semitransparente detrás del título (igual que portada del libro)
   doc.save();
-  doc.fillColor("#000000").fillOpacity(0.45);
-  doc.roundedRect(MARGIN, stCoverBoxY, W - MARGIN * 2, stCoverBoxH, 6).fill();
+  doc.fillColor("#000000").fillOpacity(0.50);
+  doc.roundedRect(MARGIN, stCoverBoxY, W - MARGIN * 2, stCoverBoxH, 8).fill();
   doc.restore();
 
   doc.fillColor("#ffffff").fillOpacity(1)
-     .font("Helvetica").fontSize(10)
-     .text(`Cuento ${storyIndex + 1}`, 0, stCoverBoxY + 6, { width: W, align: "center" });
-
-  doc.font("Helvetica-Bold").fontSize(22).fillColor("#ffffff")
-     .text(page.title || `Cuento ${storyIndex + 1}`, MARGIN + 10, stCoverBoxY + 20, {
-       width: W - MARGIN * 2 - 20, align: "center", lineGap: 3
+     .font("Helvetica-Bold").fontSize(24)
+     .text(stTitle, MARGIN + 12, stCoverBoxY + stCoverPad, {
+       width: W - MARGIN * 2 - 24, align: "center", lineGap: 4
      });
 }
 
@@ -362,16 +354,20 @@ async function addTextPage(doc, page, settings) {
     const imgAreaH  = H * 0.62; // igual que páginas de cuento
     const textAreaH = H - imgAreaH;
 
+    // Mismas dimensiones EXACTAS que addStoryPage
+    const imgH = imgAreaH - MARGIN; // igual que story: H*0.62 - MARGIN
     if (imgBuf) {
       doc.save();
-      doc.rect(0, 0, W, imgAreaH).clip();
-      doc.image(imgBuf, 0, 0, { cover: [W, imgAreaH], align: "center", valign: "center" });
+      doc.roundedRect(MARGIN, MARGIN, W - MARGIN*2, imgH, 12).clip();
+      doc.image(imgBuf, MARGIN, MARGIN, {
+        fit: [W - MARGIN*2, imgH], align: "center", valign: "center"
+      });
       doc.restore();
     } else {
-      doc.roundedRect(MARGIN, MARGIN, W - MARGIN*2, imgAreaH - MARGIN, 12).fill("#eef2f7");
+      doc.roundedRect(MARGIN, MARGIN, W - MARGIN*2, imgH, 12).fill("#eef2f7");
     }
 
-    // Recuadro de texto igual que story
+    // Recuadro texto igual que story
     const textBoxColor = settings?.textBoxColor || "#f9fafb";
     const textY = imgAreaH + 6;
     const textBoxH = H - textY - MARGIN - 18;
@@ -606,10 +602,26 @@ export async function generateCoverPdf(bookData) {
 
   // Caja para texto — fondo semitransparente (PDFKit no soporta rgba en fill, usar fillOpacity)
   if (backText) {
-    // Medir altura real del texto para ajustar el recuadro
+    const backTextW  = TRIM_W - 80;
+    const backBoxPad = 18;
+    const maxBackH   = TRIM_H * 0.42; // máximo 42% de la altura de la página
+
     doc.font("Helvetica-Oblique").fontSize(11.5);
-    const backTextH = doc.heightOfString(backText, { width: TRIM_W - 80 });
-    const backBoxPad = 16;
+
+    // Truncar el texto si excede el espacio disponible
+    let displayBackText = backText;
+    let backTextH = doc.heightOfString(displayBackText, { width: backTextW });
+    if (backTextH + backBoxPad * 2 > maxBackH) {
+      const words = displayBackText.split(" ");
+      displayBackText = "";
+      for (const word of words) {
+        const test = displayBackText ? displayBackText + " " + word : word;
+        if (doc.heightOfString(test, { width: backTextW }) + backBoxPad * 2 > maxBackH) break;
+        displayBackText = test;
+      }
+      backTextH = doc.heightOfString(displayBackText, { width: backTextW });
+    }
+
     const backBoxH = backTextH + backBoxPad * 2;
 
     doc.save();
@@ -620,8 +632,8 @@ export async function generateCoverPdf(bookData) {
     doc.fillColor("#ffffff").fillOpacity(1)
       .font("Helvetica-Oblique")
       .fontSize(11.5)
-      .text(backText, backX + 40, BLEED + 20 + backBoxPad, {
-        width: TRIM_W - 80, align: "center", lineGap: 4
+      .text(displayBackText, backX + 40, BLEED + 20 + backBoxPad, {
+        width: backTextW, align: "center", lineGap: 4
       });
   }
 
